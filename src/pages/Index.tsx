@@ -10,7 +10,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-dark text-foreground">
       <main className="container mx-auto px-4 py-10">
-        <Logo />
+        <div className="mb-10">
+          <Logo />
+        </div>
         <Navigation 
           activeSection={activeSection} 
           setActiveSection={setActiveSection} 

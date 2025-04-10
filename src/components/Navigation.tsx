@@ -35,27 +35,37 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ activeSection, setActiveSection }) => {
   return (
-    <div className="tab-container overflow-x-auto scrollbar-none">
-      <nav className="tab-navigation">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className={cn(
-                "tab-button",
-                isActive ? "active" : ""
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+    <div className="px-4 py-6">
+      <div className="max-w-4xl mx-auto bg-dark-lighter rounded-lg overflow-hidden">
+        <div className="overflow-x-auto scrollbar-none">
+          <nav className="flex">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={cn(
+                    "whitespace-nowrap flex items-center px-6 py-3 transition-colors",
+                    isActive 
+                      ? "bg-primary text-primary-foreground font-medium" 
+                      : "text-foreground hover:bg-dark-card"
+                  )}
+                  style={{
+                    borderTopLeftRadius: isActive ? "0.5rem" : 0,
+                    borderTopRightRadius: isActive ? "0.5rem" : 0,
+                  }}
+                >
+                  <Icon className="h-5 w-5 mr-2" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
     </div>
   );
 };

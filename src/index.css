@@ -16,7 +16,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 196 100% 50%;
+    --primary: 49 100% 60%;  /* Changed to yellow to match reference */
     --primary-foreground: 222 47% 11%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -127,15 +127,5 @@
   
   .scrollbar-none::-webkit-scrollbar {
     display: none;
-  }
-  
-  /* Custom styling for tabs */
-  [data-state="active"][data-orientation="horizontal"] {
-    @apply text-primary border-primary shadow-neon;
-  }
-  
-  /* Style for TabsList */
-  [role="tablist"] {
-    @apply bg-transparent p-2;
   }
 }
