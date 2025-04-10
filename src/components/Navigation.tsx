@@ -1,11 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   BarChart2, ShoppingCart, DollarSign, TrendingDown, Tag, 
-  Users, Truck, MapPin, Database, Fuel, AlertCircle, Lightbulb, Menu, X, UsersRound
+  Users, Truck, MapPin, Database, Fuel, AlertCircle, Lightbulb, UsersRound
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface NavItem {
   id: string;
@@ -35,106 +34,29 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ activeSection, setActiveSection }) => {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  const toggleDrawer = () => {
-    setIsDrawerOpen(!isDrawerOpen);
-  };
-
-  const handleSectionClick = (sectionId: string) => {
-    setActiveSection(sectionId);
-    if (isDrawerOpen) {
-      setIsDrawerOpen(false);
-    }
-  };
-
   return (
-    <>
-      {/* Mobile Hamburger Button */}
-      <div className="sticky top-16 z-40 sm:hidden bg-dark py-4 border-b border-border/50">
-        <div className="container mx-auto flex justify-between items-center">
-          <button 
-            onClick={toggleDrawer}
-            className="p-2 rounded-md hover:bg-dark-lighter"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="text-sm font-medium">
-            {navItems.find(item => item.id === activeSection)?.label}
-          </div>
-          <div className="w-9"></div> {/* Spacer to balance layout */}
-        </div>
-      </div>
-
-      {/* Mobile Drawer */}
-      <div 
-        className={cn(
-          "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all duration-300",
-          isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-      >
-        <div 
-          className={cn(
-            "fixed inset-y-0 left-0 w-3/4 max-w-xs bg-dark shadow-lg transform transition-transform duration-300 ease-in-out",
-            isDrawerOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          <div className="flex items-center justify-between p-4 border-b border-border/50">
-            <div className="font-medium">Menu</div>
-            <button 
-              onClick={toggleDrawer}
-              className="p-1 rounded-full hover:bg-dark-lighter"
+    <div className="tab-container overflow-x-auto scrollbar-none">
+      <nav className="tab-navigation">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeSection === item.id;
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              className={cn(
+                "tab-button",
+                isActive ? "active" : ""
+              )}
             >
-              <X className="h-5 w-5" />
+              <Icon className="h-5 w-5" />
+              <span>{item.label}</span>
             </button>
-          </div>
-          <div className="p-4">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                className={cn(
-                  "drawer-menu-button w-full text-left mb-3",
-                  activeSection === item.id ? "active" : ""
-                )}
-                onClick={() => handleSectionClick(item.id)}
-              >
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop & Tablet Navigation */}
-      <nav className="hidden sm:flex sticky top-16 z-40 bg-dark border-b border-border/50 py-6 justify-center">
-        <div className="container mx-auto px-4 overflow-x-auto scrollbar-none">
-          <Tabs 
-            value={activeSection} 
-            onValueChange={setActiveSection}
-            className="w-full"
-          >
-            <TabsList className="flex justify-center space-x-4 bg-transparent w-full overflow-x-auto scrollbar-none p-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <TabsTrigger 
-                    key={item.id} 
-                    value={item.id}
-                    className="flex flex-col items-center justify-center gap-2 px-4 py-2 data-[state=active]:text-primary data-[state=active]:bg-dark-lighter data-[state=active]:border-neon data-[state=active]:neon-border-subtle hover:scale-105 transition-all duration-200"
-                  >
-                    <div className="rounded-full bg-dark-lighter p-3 hover:bg-dark-card">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs whitespace-nowrap">{item.label}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </Tabs>
-        </div>
+          );
+        })}
       </nav>
-    </>
+    </div>
   );
 };
 
