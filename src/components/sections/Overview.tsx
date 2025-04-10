@@ -1,7 +1,7 @@
 
 import React from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { BarChart2, TrendingUp, Clock, Activity, Truck, Fuel, DollarSign, Users, Database } from 'lucide-react';
+import { BarChart2, TrendingUp, Clock, Activity, Truck, Fuel, DollarSign, Users, Database, AlertCircle } from 'lucide-react';
 
 const Overview: React.FC = () => {
   return (
