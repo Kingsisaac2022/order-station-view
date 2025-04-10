@@ -84,7 +84,7 @@
   }
   
   .panel-header {
-    @apply flex items-center justify-between p-3 text-sm font-medium border-b border-border/30;
+    @apply flex items-center justify-between p-4 text-sm font-medium border-b border-border/30;
   }
   
   .panel-content {
@@ -96,11 +96,11 @@
   }
   
   .stat-card {
-    @apply bg-dark-lighter rounded-md p-3 neon-border-subtle;
+    @apply bg-dark-lighter rounded-md p-4 neon-border-subtle transition-all duration-200 hover:shadow-neon;
   }
   
   .icon-nav-button {
-    @apply flex flex-col items-center justify-center p-2 rounded-md transition-all duration-200 text-muted-foreground;
+    @apply flex flex-col items-center justify-center p-3 rounded-md transition-all duration-200 text-muted-foreground;
   }
   
   .icon-nav-button.active {
@@ -112,11 +112,11 @@
   }
   
   .drawer-menu-button {
-    @apply flex items-center gap-3 p-3 rounded-md transition-all duration-200 text-muted-foreground hover:bg-dark-lighter hover:text-foreground;
+    @apply flex items-center gap-4 p-4 rounded-md transition-all duration-200 text-muted-foreground hover:bg-dark-lighter hover:text-foreground;
   }
   
   .drawer-menu-button.active {
-    @apply text-primary bg-dark-lighter;
+    @apply text-primary bg-dark-lighter neon-border-subtle;
   }
   
   /* Tab Navigation Styling */
@@ -131,12 +131,11 @@
   
   /* Custom styling for tabs */
   [data-state="active"][data-orientation="horizontal"] {
-    @apply text-primary border-primary;
+    @apply text-primary border-primary shadow-neon;
   }
   
   /* Style for TabsList */
   [role="tablist"] {
-    @apply bg-transparent p-0;
+    @apply bg-transparent p-2;
   }
 }
-

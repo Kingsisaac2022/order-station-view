@@ -51,7 +51,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, setActiveSection
   return (
     <>
       {/* Mobile Hamburger Button */}
-      <div className="sticky top-16 z-40 sm:hidden bg-dark py-2 border-b border-border/50">
+      <div className="sticky top-16 z-40 sm:hidden bg-dark py-4 border-b border-border/50">
         <div className="container mx-auto flex justify-between items-center">
           <button 
             onClick={toggleDrawer}
@@ -88,12 +88,12 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, setActiveSection
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="p-2">
+          <div className="p-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 className={cn(
-                  "drawer-menu-button w-full text-left",
+                  "drawer-menu-button w-full text-left mb-3",
                   activeSection === item.id ? "active" : ""
                 )}
                 onClick={() => handleSectionClick(item.id)}
@@ -107,26 +107,26 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, setActiveSection
       </div>
 
       {/* Desktop & Tablet Navigation */}
-      <nav className="hidden sm:flex sticky top-16 z-40 bg-dark border-b border-border/50 justify-center">
-        <div className="container py-2 overflow-x-auto scrollbar-none">
+      <nav className="hidden sm:flex sticky top-16 z-40 bg-dark border-b border-border/50 py-6 justify-center">
+        <div className="container mx-auto px-4 overflow-x-auto scrollbar-none">
           <Tabs 
             value={activeSection} 
             onValueChange={setActiveSection}
             className="w-full"
           >
-            <TabsList className="flex justify-start space-x-1 bg-transparent w-full overflow-x-auto scrollbar-none">
+            <TabsList className="flex justify-center space-x-4 bg-transparent w-full overflow-x-auto scrollbar-none p-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <TabsTrigger 
                     key={item.id} 
                     value={item.id}
-                    className="flex flex-col items-center justify-center gap-1 data-[state=active]:text-primary data-[state=active]:bg-dark-lighter data-[state=active]:border-neon data-[state=active]:neon-border-subtle hover:scale-105 transition-transform duration-200"
+                    className="flex flex-col items-center justify-center gap-2 px-4 py-2 data-[state=active]:text-primary data-[state=active]:bg-dark-lighter data-[state=active]:border-neon data-[state=active]:neon-border-subtle hover:scale-105 transition-all duration-200"
                   >
-                    <div className="rounded-full bg-dark-lighter p-2">
-                      <Icon className="h-4 w-4" />
+                    <div className="rounded-full bg-dark-lighter p-3 hover:bg-dark-card">
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <span className="text-xs">{item.label}</span>
+                    <span className="text-xs whitespace-nowrap">{item.label}</span>
                   </TabsTrigger>
                 );
               })}

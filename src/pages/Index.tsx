@@ -14,7 +14,7 @@ const Index = () => {
         activeSection={activeSection} 
         setActiveSection={setActiveSection} 
       />
-      <main className="flex-grow pb-6">
+      <main className="flex-grow py-6">
         <Dashboard activeSection={activeSection} />
       </main>
     </div>
