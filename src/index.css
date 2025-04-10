@@ -118,4 +118,25 @@
   .drawer-menu-button.active {
     @apply text-primary bg-dark-lighter;
   }
+  
+  /* Tab Navigation Styling */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Custom styling for tabs */
+  [data-state="active"][data-orientation="horizontal"] {
+    @apply text-primary border-primary;
+  }
+  
+  /* Style for TabsList */
+  [role="tablist"] {
+    @apply bg-transparent p-0;
+  }
 }
+
