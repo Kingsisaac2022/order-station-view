@@ -5,33 +5,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, CheckCircle, AlertTriangle, Truck, MapPin } from 'lucide-react';
 import { useOrders } from '@/context/OrderContext';
+import { useFleet } from '@/context/FleetContext';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const OrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { orders, updateOrderStatus, assignDriver, completeDelivery, setActiveOrder } = useOrders();
+  const { drivers, trucks } = useFleet();
   const [selectedDriver, setSelectedDriver] = useState('');
   const [selectedTruck, setSelectedTruck] = useState('');
   const [deliveredVolume, setDeliveredVolume] = useState('');
   
-  // Sample data for demo
-  const drivers = [
-    { id: 'd1', name: 'Emmanuel Okafor', licenseNo: 'L123456', status: 'available' },
-    { id: 'd2', name: 'Funmi Adebayo', licenseNo: 'L789012', status: 'available' },
-  ];
-  
-  const trucks = [
-    { id: 't1', plateNo: 'LAG-123-XY', capacity: '33,000L', status: 'available' },
-    { id: 't2', plateNo: 'ABJ-456-ZA', capacity: '45,000L', status: 'available' },
-  ];
-
   // Find the current order
   const order = orders.find(o => o.id === id);
+
+  // Get available drivers and trucks
+  const availableDrivers = drivers.filter(driver => driver.status === 'approved' && !driver.assignedTruckId);
+  const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assignedDriverId);
 
   // Set active order when component mounts
   useEffect(() => {
@@ -84,7 +86,10 @@ const OrderDetailsPage: React.FC = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 This order is waiting for payment verification before proceeding.
               </p>
-              <Button onClick={() => updateOrderStatus(order.id, 'active', 'Payment verified successfully')}>
+              <Button 
+                onClick={() => updateOrderStatus(order.id, 'active', 'Payment verified successfully')}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black"
+              >
                 <CheckCircle size={16} className="mr-2" />
                 Verify Payment
               </Button>
@@ -105,7 +110,7 @@ const OrderDetailsPage: React.FC = () => {
               
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
                     <Truck size={16} className="mr-2" />
                     Assign Driver & Truck
                   </Button>
@@ -121,47 +126,68 @@ const OrderDetailsPage: React.FC = () => {
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="driver">Select Driver</Label>
-                      <select 
-                        id="driver"
-                        className="w-full px-3 py-2 bg-dark border border-border rounded-md"
-                        value={selectedDriver}
-                        onChange={(e) => setSelectedDriver(e.target.value)}
-                      >
-                        <option value="">-- Select Driver --</option>
-                        {drivers.map(driver => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.name} - License: {driver.licenseNo}
-                          </option>
-                        ))}
-                      </select>
+                      <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- Select Driver --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableDrivers.length > 0 ? (
+                            availableDrivers.map(driver => (
+                              <SelectItem key={driver.id} value={driver.id}>
+                                {driver.name} - License: {driver.licenseNo}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>No approved drivers available</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {availableDrivers.length === 0 && (
+                        <p className="text-xs text-yellow-500 mt-1">
+                          No approved drivers available. Please add and approve drivers from the Drivers page.
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="truck">Select Truck</Label>
-                      <select 
-                        id="truck"
-                        className="w-full px-3 py-2 bg-dark border border-border rounded-md"
-                        value={selectedTruck}
-                        onChange={(e) => setSelectedTruck(e.target.value)}
-                      >
-                        <option value="">-- Select Truck --</option>
-                        {trucks.map(truck => (
-                          <option key={truck.id} value={truck.id}>
-                            {truck.plateNo} - Capacity: {truck.capacity}
-                          </option>
-                        ))}
-                      </select>
+                      <Select value={selectedTruck} onValueChange={setSelectedTruck}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- Select Truck --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTrucks.length > 0 ? (
+                            availableTrucks.map(truck => (
+                              <SelectItem key={truck.id} value={truck.id}>
+                                {truck.plateNo} - Capacity: {truck.capacity}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>No available trucks</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {availableTrucks.length === 0 && (
+                        <p className="text-xs text-yellow-500 mt-1">
+                          No trucks available. Please add trucks from the Trucks page.
+                        </p>
+                      )}
                     </div>
                   </div>
                   
                   <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setSelectedDriver('');
+                      setSelectedTruck('');
+                    }}>Cancel</Button>
                     <Button 
                       disabled={!selectedDriver || !selectedTruck}
                       onClick={() => {
                         assignDriver(order.id, selectedDriver, selectedTruck);
                         updateOrderStatus(order.id, 'in-transit', `Assigned to driver ID: ${selectedDriver} with truck ID: ${selectedTruck}`);
-                        navigate(`/`); // Redirect to GPS tracking
+                        navigate('/');
                       }}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black"
                     >
                       Confirm Assignment & Start Transit
                     </Button>
@@ -184,14 +210,18 @@ const OrderDetailsPage: React.FC = () => {
               </p>
               
               <div className="flex space-x-4">
-                <Button variant="outline" onClick={() => navigate('/')}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/')}
+                  className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                >
                   <MapPin size={16} className="mr-2" />
                   View on GPS Tracking
                 </Button>
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
                       <CheckCircle size={16} className="mr-2" />
                       Complete Delivery
                     </Button>
@@ -230,6 +260,7 @@ const OrderDetailsPage: React.FC = () => {
                           completeDelivery(order.id, deliveredVolume);
                           navigate('/');
                         }}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black"
                       >
                         Confirm Delivery
                       </Button>
@@ -281,6 +312,10 @@ const OrderDetailsPage: React.FC = () => {
         return null;
     }
   };
+
+  // Get assigned driver and truck details
+  const assignedDriver = drivers.find(d => d.id === order.driverId);
+  const assignedTruck = trucks.find(t => t.id === order.assignedTruckId);
 
   return (
     <div className="min-h-screen bg-dark text-foreground py-10">
@@ -406,25 +441,25 @@ const OrderDetailsPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  {(order.driverId || order.assignedTruckId) && (
+                  {(assignedDriver || assignedTruck) && (
                     <>
                       <Separator />
                       <div>
                         <h3 className="font-medium mb-4">Transport Details</h3>
                         <ul className="space-y-2">
-                          {order.driverId && (
+                          {assignedDriver && (
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Assigned Driver:</span>
                               <span>
-                                {drivers.find(d => d.id === order.driverId)?.name || 'Unknown Driver'}
+                                {assignedDriver.name} ({assignedDriver.licenseNo})
                               </span>
                             </li>
                           )}
-                          {order.assignedTruckId && (
+                          {assignedTruck && (
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Assigned Truck:</span>
                               <span>
-                                {trucks.find(t => t.id === order.assignedTruckId)?.plateNo || 'Unknown Truck'}
+                                {assignedTruck.plateNo} - {assignedTruck.capacity}
                               </span>
                             </li>
                           )}

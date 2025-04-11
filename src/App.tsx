@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import CreatePurchaseOrder from "./pages/CreatePurchaseOrder";
 import NotFound from "./pages/NotFound";
 import { OrderProvider } from "./context/OrderContext";
+import { FleetProvider } from "./context/FleetContext";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 
 const queryClient = new QueryClient();
@@ -14,18 +15,20 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <OrderProvider>
-        <BrowserRouter>
-          <Toaster />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/create-purchase-order" element={<CreatePurchaseOrder />} />
-            <Route path="/order/:id" element={<OrderDetailsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </OrderProvider>
+      <FleetProvider>
+        <OrderProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/create-purchase-order" element={<CreatePurchaseOrder />} />
+              <Route path="/order/:id" element={<OrderDetailsPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </OrderProvider>
+      </FleetProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
