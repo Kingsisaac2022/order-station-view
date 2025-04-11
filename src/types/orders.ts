@@ -1,6 +1,17 @@
 
 export type OrderStatus = 'pending' | 'active' | 'in-transit' | 'completed' | 'flagged';
 
+export interface LocationUpdate {
+  location: [number, number];
+  timestamp: string;
+}
+
+export interface JourneyInfo {
+  type: string; // 'traffic', 'weather', 'stop', 'info', etc.
+  message: string;
+  timestamp: string;
+}
+
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
@@ -30,6 +41,8 @@ export interface PurchaseOrder {
   origin?: [number, number]; // GPS coordinates for loading location
   destinationCoords?: [number, number]; // GPS coordinates for destination
   currentLocation?: [number, number]; // Current GPS coordinates during transit
+  locationUpdates?: LocationUpdate[]; // History of location updates
+  journeyInfo?: JourneyInfo[]; // Info about the journey (traffic, weather, stops)
   volumeAtLoading?: string;
   volumeAtDelivery?: string;
   deliveryDate?: string;

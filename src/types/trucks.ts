@@ -10,6 +10,8 @@ export interface Truck {
   gpsEnabled: boolean;
   gpsId?: string;
   currentLocation?: [number, number];
+  fuelLevel?: number; // percentage of fuel remaining
+  lastMaintenance?: string; // date of last maintenance
   notes?: string;
   createdAt: string;
 }

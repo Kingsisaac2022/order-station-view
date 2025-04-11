@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import { OrderProvider } from "./context/OrderContext";
 import { FleetProvider } from "./context/FleetContext";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
+import TrackOrderPage from "./pages/TrackOrderPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/create-purchase-order" element={<CreatePurchaseOrder />} />
               <Route path="/order/:id" element={<OrderDetailsPage />} />
+              <Route path="/track/:id" element={<TrackOrderPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

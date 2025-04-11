@@ -1,33 +1,7 @@
+
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { PurchaseOrder, OrderStatus } from '@/types/orders';
 import { toast } from 'sonner';
-
-// Initial sample order to demonstrate functionality
-const sampleOrder: PurchaseOrder = {
-  id: '1',
-  poNumber: 'FS/NNPC/PO/12345',
-  date: '2025-04-11',
-  depotManager: 'John Doe',
-  depotLocation: 'NNPC Depot – Apapa, Lagos',
-  productType: 'PMS (Petrol)',
-  quantity: '33,000',
-  pricePerLitre: '₦195.00',
-  totalAmount: '₦6,435,000.00',
-  loadingLocation: 'NNPC Depot, Apapa, Lagos',
-  destination: 'ABC Filling Station, 123 Main St, Lagos',
-  expectedLoadingDate: '2025-04-15',
-  paymentReference: 'REF123456',
-  bankName: 'First Bank',
-  paymentDate: '2025-04-11',
-  amountPaid: '₦6,435,000.00',
-  paymentType: 'Full Payment',
-  authorizedBy: 'Jane Smith',
-  authorizedPosition: 'Station Manager',
-  authorizedCompany: 'ABC Filling Station',
-  status: 'pending',
-  origin: [3.3792, 6.4550], // Apapa coordinates
-  destinationCoords: [3.3886, 6.4281], // Sample destination in Lagos
-};
 
 interface OrderState {
   orders: PurchaseOrder[];
@@ -35,7 +9,7 @@ interface OrderState {
 }
 
 const initialState: OrderState = {
-  orders: [sampleOrder],
+  orders: [],
   activeOrder: null,
 };
 
@@ -46,7 +20,8 @@ type OrderAction =
   | { type: 'SET_ACTIVE_ORDER'; payload: PurchaseOrder | null }
   | { type: 'UPDATE_ORDER_STATUS'; payload: { id: string; status: OrderStatus; notes?: string } }
   | { type: 'ASSIGN_DRIVER'; payload: { id: string; driverId: string; truckId: string } }
-  | { type: 'UPDATE_LOCATION'; payload: { id: string; location: [number, number] } }
+  | { type: 'UPDATE_LOCATION'; payload: { id: string; location: [number, number]; timestamp: string } }
+  | { type: 'UPDATE_JOURNEY_INFO'; payload: { id: string; info: { type: string; message: string; timestamp: string } } }
   | { type: 'COMPLETE_DELIVERY'; payload: { id: string; volumeDelivered: string } };
 
 const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
@@ -87,7 +62,18 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
         ...state,
         orders: state.orders.map(order => 
           order.id === action.payload.id 
-            ? { ...order, driverId: action.payload.driverId, assignedTruckId: action.payload.truckId } 
+            ? { 
+                ...order, 
+                driverId: action.payload.driverId, 
+                assignedTruckId: action.payload.truckId,
+                journeyInfo: [
+                  { 
+                    type: 'assignment', 
+                    message: `Driver and truck assigned for delivery`, 
+                    timestamp: new Date().toISOString() 
+                  }
+                ]
+              } 
             : order
         ),
       };
@@ -96,7 +82,32 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
         ...state,
         orders: state.orders.map(order => 
           order.id === action.payload.id 
-            ? { ...order, currentLocation: action.payload.location } 
+            ? { 
+                ...order, 
+                currentLocation: action.payload.location,
+                locationUpdates: [
+                  ...(order.locationUpdates || []),
+                  { 
+                    location: action.payload.location,
+                    timestamp: action.payload.timestamp
+                  }
+                ] 
+              } 
+            : order
+        ),
+      };
+    case 'UPDATE_JOURNEY_INFO':
+      return {
+        ...state,
+        orders: state.orders.map(order => 
+          order.id === action.payload.id 
+            ? { 
+                ...order, 
+                journeyInfo: [
+                  ...(order.journeyInfo || []),
+                  action.payload.info
+                ] 
+              } 
             : order
         ),
       };
@@ -123,7 +134,15 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
                 volumeAtDelivery: action.payload.volumeDelivered,
                 volumeAtLoading: order.quantity,
                 deliveryDate: new Date().toISOString().split('T')[0],
-                notes 
+                notes,
+                journeyInfo: [
+                  ...(order.journeyInfo || []),
+                  { 
+                    type: newStatus, 
+                    message: `Delivery ${newStatus}. ${notes}`, 
+                    timestamp: new Date().toISOString() 
+                  }
+                ]
               } 
             : order
         ),
@@ -143,6 +162,7 @@ interface OrderContextType {
   updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => void;
   assignDriver: (id: string, driverId: string, truckId: string) => void;
   updateLocation: (id: string, location: [number, number]) => void;
+  updateJourneyInfo: (id: string, type: string, message: string) => void;
   completeDelivery: (id: string, volumeDelivered: string) => void;
 }
 
@@ -198,6 +218,83 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStatusChanges();
   }, [state.activeOrder?.status]);
 
+  // Update truck locations for in-transit orders
+  useEffect(() => {
+    const inTransitOrders = state.orders.filter(order => order.status === 'in-transit');
+    if (inTransitOrders.length === 0) return;
+
+    // Set up interval for location updates
+    const interval = setInterval(() => {
+      inTransitOrders.forEach(order => {
+        if (!order.origin || !order.destinationCoords || !order.currentLocation) return;
+
+        // Calculate new position along the route
+        const [startLng, startLat] = order.origin;
+        const [endLng, endLat] = order.destinationCoords;
+        
+        // Get current position
+        let [currentLng, currentLat] = order.currentLocation;
+        
+        // Calculate direction and distance to move
+        const totalDistLng = endLng - startLng;
+        const totalDistLat = endLat - startLat;
+        
+        // Move a small step toward destination (5% of remaining distance)
+        const remainingDistLng = endLng - currentLng;
+        const remainingDistLat = endLat - currentLat;
+        
+        const moveLng = remainingDistLng * 0.05;
+        const moveLat = remainingDistLat * 0.05;
+        
+        // Update position if not very close to destination
+        if (Math.abs(remainingDistLng) > 0.001 || Math.abs(remainingDistLat) > 0.001) {
+          const newLng = currentLng + moveLng;
+          const newLat = currentLat + moveLat;
+          
+          // Update location
+          dispatch({ 
+            type: 'UPDATE_LOCATION', 
+            payload: { 
+              id: order.id, 
+              location: [newLng, newLat],
+              timestamp: new Date().toISOString()
+            } 
+          });
+          
+          // Add journey updates occasionally
+          if (Math.random() > 0.85) {
+            const updates = [
+              { type: 'traffic', message: 'Light traffic conditions on route' },
+              { type: 'weather', message: 'Weather conditions: Clear skies' },
+              { type: 'info', message: 'Passing through Ikeja, Lagos' },
+              { type: 'traffic', message: 'Traffic congestion ahead, may cause delays' },
+              { type: 'stop', message: 'Brief stop for driver rest break' },
+              { type: 'weather', message: 'Weather conditions: Light showers' },
+              { type: 'traffic', message: 'Road work ahead, using alternate route' },
+              { type: 'info', message: 'Entering Epe road' }
+            ];
+            
+            const update = updates[Math.floor(Math.random() * updates.length)];
+            
+            dispatch({
+              type: 'UPDATE_JOURNEY_INFO',
+              payload: {
+                id: order.id,
+                info: {
+                  type: update.type,
+                  message: update.message,
+                  timestamp: new Date().toISOString()
+                }
+              }
+            });
+          }
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [state.orders]);
+
   // Context values
   const value = {
     orders: state.orders,
@@ -221,7 +318,27 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dispatch({ type: 'ASSIGN_DRIVER', payload: { id, driverId, truckId } });
     },
     updateLocation: (id: string, location: [number, number]) => {
-      dispatch({ type: 'UPDATE_LOCATION', payload: { id, location } });
+      dispatch({ 
+        type: 'UPDATE_LOCATION', 
+        payload: { 
+          id, 
+          location,
+          timestamp: new Date().toISOString()
+        } 
+      });
+    },
+    updateJourneyInfo: (id: string, type: string, message: string) => {
+      dispatch({ 
+        type: 'UPDATE_JOURNEY_INFO', 
+        payload: { 
+          id, 
+          info: {
+            type,
+            message,
+            timestamp: new Date().toISOString()
+          }
+        } 
+      });
     },
     completeDelivery: (id: string, volumeDelivered: string) => {
       dispatch({ type: 'COMPLETE_DELIVERY', payload: { id, volumeDelivered } });

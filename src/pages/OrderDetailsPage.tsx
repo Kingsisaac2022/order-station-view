@@ -33,7 +33,7 @@ const OrderDetailsPage: React.FC = () => {
 
   // Get available drivers and trucks
   const availableDrivers = drivers.filter(driver => driver.status === 'approved' && !driver.assignedTruckId);
-  const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assignedDriverId);
+  const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assignedDriverId && truck.gpsEnabled);
 
   // Set active order when component mounts
   useEffect(() => {
@@ -105,7 +105,7 @@ const OrderDetailsPage: React.FC = () => {
                 <h3 className="font-medium">Payment Verified</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Payment has been verified. Assign a driver and truck to start delivery.
+                Payment has been verified. Assign a GPS-enabled truck and approved driver to start delivery.
               </p>
               
               <Dialog>
@@ -119,7 +119,7 @@ const OrderDetailsPage: React.FC = () => {
                   <DialogHeader>
                     <DialogTitle>Assign Driver & Truck</DialogTitle>
                     <DialogDescription>
-                      Select from available drivers and trucks to handle this delivery.
+                      Select from available approved drivers and GPS-enabled trucks to handle this delivery.
                     </DialogDescription>
                   </DialogHeader>
                   
@@ -150,7 +150,7 @@ const OrderDetailsPage: React.FC = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="truck">Select Truck</Label>
+                      <Label htmlFor="truck">Select GPS-Enabled Truck</Label>
                       <Select value={selectedTruck} onValueChange={setSelectedTruck}>
                         <SelectTrigger>
                           <SelectValue placeholder="-- Select Truck --" />
@@ -159,17 +159,17 @@ const OrderDetailsPage: React.FC = () => {
                           {availableTrucks.length > 0 ? (
                             availableTrucks.map(truck => (
                               <SelectItem key={truck.id} value={truck.id}>
-                                {truck.plateNo} - Capacity: {truck.capacity}
+                                {truck.plateNo} - {truck.capacity} - GPS Enabled
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="" disabled>No available trucks</SelectItem>
+                            <SelectItem value="" disabled>No available GPS-enabled trucks</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
                       {availableTrucks.length === 0 && (
                         <p className="text-xs text-yellow-500 mt-1">
-                          No trucks available. Please add trucks from the Trucks page.
+                          No GPS-enabled trucks available. Please add trucks with GPS from the Trucks page.
                         </p>
                       )}
                     </div>
@@ -206,22 +206,21 @@ const OrderDetailsPage: React.FC = () => {
                 <h3 className="font-medium">In Transit</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Order is currently in transit. You can track the location on the GPS Tracking page.
+                Order is currently in transit. You can track the detailed journey on the tracking page.
               </p>
               
               <div className="flex space-x-4">
                 <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/')}
-                  className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+                  onClick={() => navigate(`/track/${order.id}`)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   <MapPin size={16} className="mr-2" />
-                  View on GPS Tracking
+                  Live Tracking
                 </Button>
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                    <Button variant="outline" className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10">
                       <CheckCircle size={16} className="mr-2" />
                       Complete Delivery
                     </Button>
