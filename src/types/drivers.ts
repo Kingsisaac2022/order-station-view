@@ -2,12 +2,13 @@
 export interface Driver {
   id: string;
   name: string;
-  licenseNo: string;
-  phoneNumber: string;
+  license_no: string;
+  phone_number: string;
   email: string;
-  assignedTruckId?: string;
+  assigned_truck_id?: string;
   status: 'available' | 'on-duty' | 'off-duty' | 'pending-approval' | 'approved';
-  lastTrip?: string;
+  last_trip?: string;
   notes?: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
 }

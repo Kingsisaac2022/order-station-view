@@ -1,19 +1,25 @@
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { PurchaseOrder, OrderStatus } from '@/types/orders';
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from '@/types/orders';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderState {
   orders: PurchaseOrder[];
   activeOrder: PurchaseOrder | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const initialState: OrderState = {
   orders: [],
   activeOrder: null,
+  isLoading: true,
+  error: null
 };
 
 type OrderAction = 
+  | { type: 'SET_ORDERS'; payload: PurchaseOrder[] }
   | { type: 'ADD_ORDER'; payload: PurchaseOrder }
   | { type: 'UPDATE_ORDER'; payload: PurchaseOrder }
   | { type: 'DELETE_ORDER'; payload: string }
@@ -22,10 +28,17 @@ type OrderAction =
   | { type: 'ASSIGN_DRIVER'; payload: { id: string; driverId: string; truckId: string } }
   | { type: 'UPDATE_LOCATION'; payload: { id: string; location: [number, number]; timestamp: string } }
   | { type: 'UPDATE_JOURNEY_INFO'; payload: { id: string; info: { type: string; message: string; timestamp: string } } }
-  | { type: 'COMPLETE_DELIVERY'; payload: { id: string; volumeDelivered: string } };
+  | { type: 'COMPLETE_DELIVERY'; payload: { id: string; volumeDelivered: string } }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null };
 
 const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
   switch (action.type) {
+    case 'SET_ORDERS':
+      return {
+        ...state,
+        orders: action.payload,
+      };
     case 'ADD_ORDER':
       return {
         ...state,
@@ -37,11 +50,15 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
         orders: state.orders.map(order => 
           order.id === action.payload.id ? action.payload : order
         ),
+        activeOrder: state.activeOrder?.id === action.payload.id 
+          ? action.payload 
+          : state.activeOrder
       };
     case 'DELETE_ORDER':
       return {
         ...state,
         orders: state.orders.filter(order => order.id !== action.payload),
+        activeOrder: state.activeOrder?.id === action.payload ? null : state.activeOrder
       };
     case 'SET_ACTIVE_ORDER':
       return {
@@ -56,6 +73,9 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
             ? { ...order, status: action.payload.status, notes: action.payload.notes || order.notes } 
             : order
         ),
+        activeOrder: state.activeOrder?.id === action.payload.id
+          ? { ...state.activeOrder, status: action.payload.status, notes: action.payload.notes || state.activeOrder.notes }
+          : state.activeOrder
       };
     case 'ASSIGN_DRIVER':
       return {
@@ -64,18 +84,18 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
           order.id === action.payload.id 
             ? { 
                 ...order, 
-                driverId: action.payload.driverId, 
-                assignedTruckId: action.payload.truckId,
-                journeyInfo: [
-                  { 
-                    type: 'assignment', 
-                    message: `Driver and truck assigned for delivery`, 
-                    timestamp: new Date().toISOString() 
-                  }
-                ]
+                driver_id: action.payload.driverId, 
+                assigned_truck_id: action.payload.truckId
               } 
             : order
         ),
+        activeOrder: state.activeOrder?.id === action.payload.id
+          ? { 
+              ...state.activeOrder, 
+              driver_id: action.payload.driverId, 
+              assigned_truck_id: action.payload.truckId 
+            }
+          : state.activeOrder
       };
     case 'UPDATE_LOCATION':
       return {
@@ -84,10 +104,12 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
           order.id === action.payload.id 
             ? { 
                 ...order, 
-                currentLocation: action.payload.location,
-                locationUpdates: [
-                  ...(order.locationUpdates || []),
+                current_location: action.payload.location,
+                location_updates: [
+                  ...(order.location_updates || []),
                   { 
+                    id: `temp-${Date.now()}`,
+                    purchase_order_id: order.id,
                     location: action.payload.location,
                     timestamp: action.payload.timestamp
                   }
@@ -95,6 +117,21 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
               } 
             : order
         ),
+        activeOrder: state.activeOrder?.id === action.payload.id
+          ? { 
+              ...state.activeOrder,
+              current_location: action.payload.location,
+              location_updates: [
+                ...(state.activeOrder.location_updates || []),
+                { 
+                  id: `temp-${Date.now()}`,
+                  purchase_order_id: state.activeOrder.id,
+                  location: action.payload.location,
+                  timestamp: action.payload.timestamp
+                }
+              ]
+            }
+          : state.activeOrder
       };
     case 'UPDATE_JOURNEY_INFO':
       return {
@@ -103,49 +140,69 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
           order.id === action.payload.id 
             ? { 
                 ...order, 
-                journeyInfo: [
-                  ...(order.journeyInfo || []),
-                  action.payload.info
+                journey_info: [
+                  ...(order.journey_info || []),
+                  { 
+                    id: `temp-${Date.now()}`,
+                    purchase_order_id: order.id,
+                    ...action.payload.info 
+                  }
                 ] 
               } 
             : order
         ),
+        activeOrder: state.activeOrder?.id === action.payload.id
+          ? { 
+              ...state.activeOrder,
+              journey_info: [
+                ...(state.activeOrder.journey_info || []),
+                { 
+                  id: `temp-${Date.now()}`,
+                  purchase_order_id: state.activeOrder.id,
+                  ...action.payload.info 
+                }
+              ]
+            }
+          : state.activeOrder
       };
     case 'COMPLETE_DELIVERY':
-      const order = state.orders.find(o => o.id === action.payload.id);
-      if (!order) return state;
-      
-      const volumeAtLoading = parseFloat(order.quantity.replace(/,/g, ''));
-      const volumeAtDelivery = parseFloat(action.payload.volumeDelivered.replace(/,/g, ''));
-      const difference = (volumeAtLoading - volumeAtDelivery) / volumeAtLoading * 100;
-      
-      const newStatus: OrderStatus = difference >= 3 ? 'flagged' : 'completed';
-      const notes = difference >= 3 
-        ? `Flagged: Volume difference of ${difference.toFixed(2)}% detected` 
-        : `Completed: Delivered volume matches expected (${difference.toFixed(2)}% difference)`;
+      {
+        const order = state.orders.find(o => o.id === action.payload.id);
+        if (!order) return state;
+        
+        const volumeAtLoading = parseFloat(order.quantity.replace(/,/g, ''));
+        const volumeAtDelivery = parseFloat(action.payload.volumeDelivered.replace(/,/g, ''));
+        const difference = (volumeAtLoading - volumeAtDelivery) / volumeAtLoading * 100;
+        
+        const newStatus: OrderStatus = difference >= 3 ? 'flagged' : 'completed';
+        const notes = difference >= 3 
+          ? `Flagged: Volume difference of ${difference.toFixed(2)}% detected` 
+          : `Completed: Delivered volume matches expected (${difference.toFixed(2)}% difference)`;
 
+        const updatedOrder = { 
+          ...order, 
+          status: newStatus, 
+          volume_at_delivery: action.payload.volumeDelivered,
+          volume_at_loading: order.quantity,
+          delivery_date: new Date().toISOString().split('T')[0],
+          notes
+        };
+
+        return {
+          ...state,
+          orders: state.orders.map(o => o.id === action.payload.id ? updatedOrder : o),
+          activeOrder: state.activeOrder?.id === action.payload.id ? updatedOrder : state.activeOrder
+        };
+      }
+    case 'SET_LOADING':
       return {
         ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id 
-            ? { 
-                ...order, 
-                status: newStatus, 
-                volumeAtDelivery: action.payload.volumeDelivered,
-                volumeAtLoading: order.quantity,
-                deliveryDate: new Date().toISOString().split('T')[0],
-                notes,
-                journeyInfo: [
-                  ...(order.journeyInfo || []),
-                  { 
-                    type: newStatus, 
-                    message: `Delivery ${newStatus}. ${notes}`, 
-                    timestamp: new Date().toISOString() 
-                  }
-                ]
-              } 
-            : order
-        ),
+        isLoading: action.payload
+      };
+    case 'SET_ERROR':
+      return {
+        ...state,
+        error: action.payload
       };
     default:
       return state;
@@ -155,15 +212,18 @@ const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
 interface OrderContextType {
   orders: PurchaseOrder[];
   activeOrder: PurchaseOrder | null;
-  addOrder: (order: PurchaseOrder) => void;
-  updateOrder: (order: PurchaseOrder) => void;
-  deleteOrder: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  loadOrders: () => Promise<void>;
+  addOrder: (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  updateOrder: (id: string, order: Partial<PurchaseOrder>) => Promise<void>;
+  deleteOrder: (id: string) => Promise<void>;
   setActiveOrder: (order: PurchaseOrder | null) => void;
-  updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => void;
-  assignDriver: (id: string, driverId: string, truckId: string) => void;
-  updateLocation: (id: string, location: [number, number]) => void;
-  updateJourneyInfo: (id: string, type: string, message: string) => void;
-  completeDelivery: (id: string, volumeDelivered: string) => void;
+  updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => Promise<void>;
+  assignDriver: (id: string, driverId: string, truckId: string) => Promise<void>;
+  updateLocation: (id: string, location: [number, number]) => Promise<void>;
+  updateJourneyInfo: (id: string, type: string, message: string) => Promise<void>;
+  completeDelivery: (id: string, volumeDelivered: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -218,6 +278,79 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStatusChanges();
   }, [state.activeOrder?.status]);
 
+  // Load orders from database
+  const loadOrders = async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      // Fetch orders
+      const { data: orders, error: ordersError } = await supabase
+        .from('purchase_orders')
+        .select('*');
+        
+      if (ordersError) throw ordersError;
+
+      // Fetch location updates for each order
+      const { data: locationUpdates, error: locError } = await supabase
+        .from('location_updates')
+        .select('*');
+        
+      if (locError) throw locError;
+
+      // Fetch journey info for each order
+      const { data: journeyInfo, error: journeyError } = await supabase
+        .from('journey_info')
+        .select('*');
+        
+      if (journeyError) throw journeyError;
+
+      // Convert points to arrays and merge data
+      const formattedOrders = orders.map(order => {
+        // Format locations from POINT to array format
+        const formattedOrder = {
+          ...order,
+          origin: order.origin ? [order.origin.x, order.origin.y] as [number, number] : undefined,
+          destination_coords: order.destination_coords 
+            ? [order.destination_coords.x, order.destination_coords.y] as [number, number] 
+            : undefined,
+          current_location: order.current_location 
+            ? [order.current_location.x, order.current_location.y] as [number, number] 
+            : undefined
+        };
+        
+        // Attach location updates
+        const orderLocationUpdates = locationUpdates
+          .filter(update => update.purchase_order_id === order.id)
+          .map(update => ({
+            ...update,
+            location: update.location ? [update.location.x, update.location.y] as [number, number] : [0, 0]
+          }));
+          
+        formattedOrder.location_updates = orderLocationUpdates;
+        
+        // Attach journey info
+        formattedOrder.journey_info = journeyInfo.filter(info => 
+          info.purchase_order_id === order.id
+        );
+        
+        return formattedOrder;
+      });
+      
+      dispatch({ type: 'SET_ORDERS', payload: formattedOrders });
+      dispatch({ type: 'SET_ERROR', payload: null });
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load orders' });
+      toast.error('Failed to load orders');
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
   // Update truck locations for in-transit orders
   useEffect(() => {
     const inTransitOrders = state.orders.filter(order => order.status === 'in-transit');
@@ -226,14 +359,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Set up interval for location updates
     const interval = setInterval(() => {
       inTransitOrders.forEach(order => {
-        if (!order.origin || !order.destinationCoords || !order.currentLocation) return;
+        if (!order.origin || !order.destination_coords || !order.current_location) return;
 
         // Calculate new position along the route
         const [startLng, startLat] = order.origin;
-        const [endLng, endLat] = order.destinationCoords;
+        const [endLng, endLat] = order.destination_coords;
         
         // Get current position
-        let [currentLng, currentLat] = order.currentLocation;
+        let [currentLng, currentLat] = order.current_location;
         
         // Calculate direction and distance to move
         const totalDistLng = endLng - startLng;
@@ -252,14 +385,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const newLat = currentLat + moveLat;
           
           // Update location
-          dispatch({ 
-            type: 'UPDATE_LOCATION', 
-            payload: { 
-              id: order.id, 
-              location: [newLng, newLat],
-              timestamp: new Date().toISOString()
-            } 
-          });
+          updateLocation(order.id, [newLng, newLat]);
           
           // Add journey updates occasionally
           if (Math.random() > 0.85) {
@@ -275,18 +401,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ];
             
             const update = updates[Math.floor(Math.random() * updates.length)];
-            
-            dispatch({
-              type: 'UPDATE_JOURNEY_INFO',
-              payload: {
-                id: order.id,
-                info: {
-                  type: update.type,
-                  message: update.message,
-                  timestamp: new Date().toISOString()
-                }
-              }
-            });
+            updateJourneyInfo(order.id, update.type, update.message);
           }
         }
       });
@@ -299,49 +414,349 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const value = {
     orders: state.orders,
     activeOrder: state.activeOrder,
-    addOrder: (order: PurchaseOrder) => {
-      dispatch({ type: 'ADD_ORDER', payload: order });
+    isLoading: state.isLoading,
+    error: state.error,
+    loadOrders,
+    
+    addOrder: async (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => {
+      try {
+        // Convert location arrays to points if they exist
+        const dbOrder = { ...order };
+        if (order.origin) {
+          dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
+        }
+        if (order.destination_coords) {
+          dbOrder.destination_coords = `(${order.destination_coords[0]},${order.destination_coords[1]})`;
+        }
+        if (order.current_location) {
+          dbOrder.current_location = `(${order.current_location[0]},${order.current_location[1]})`;
+        }
+        
+        // Remove related arrays that are stored in separate tables
+        delete dbOrder.location_updates;
+        delete dbOrder.journey_info;
+        
+        const { data, error } = await supabase
+          .from('purchase_orders')
+          .insert([dbOrder])
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Format the new order with array coordinates
+        const formattedOrder = {
+          ...data,
+          origin: data.origin ? [data.origin.x, data.origin.y] as [number, number] : undefined,
+          destination_coords: data.destination_coords 
+            ? [data.destination_coords.x, data.destination_coords.y] as [number, number] 
+            : undefined,
+          current_location: data.current_location 
+            ? [data.current_location.x, data.current_location.y] as [number, number] 
+            : undefined,
+          location_updates: [],
+          journey_info: []
+        };
+        
+        dispatch({ type: 'ADD_ORDER', payload: formattedOrder });
+        toast.success('Order created successfully');
+        
+        return formattedOrder;
+      } catch (error) {
+        console.error('Error creating order:', error);
+        toast.error('Failed to create order');
+        throw error;
+      }
     },
-    updateOrder: (order: PurchaseOrder) => {
-      dispatch({ type: 'UPDATE_ORDER', payload: order });
+    
+    updateOrder: async (id: string, order: Partial<PurchaseOrder>) => {
+      try {
+        // Convert location arrays to points if they exist
+        const dbOrder = { ...order };
+        if (order.origin) {
+          dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
+        }
+        if (order.destination_coords) {
+          dbOrder.destination_coords = `(${order.destination_coords[0]},${order.destination_coords[1]})`;
+        }
+        if (order.current_location) {
+          dbOrder.current_location = `(${order.current_location[0]},${order.current_location[1]})`;
+        }
+        
+        // Remove related arrays that are stored in separate tables
+        delete dbOrder.location_updates;
+        delete dbOrder.journey_info;
+        
+        const { data, error } = await supabase
+          .from('purchase_orders')
+          .update(dbOrder)
+          .eq('id', id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        // Need to re-fetch the related data
+        // For simplicity, we'll reload all orders
+        await loadOrders();
+        
+        toast.success('Order updated successfully');
+      } catch (error) {
+        console.error('Error updating order:', error);
+        toast.error('Failed to update order');
+      }
     },
-    deleteOrder: (id: string) => {
-      dispatch({ type: 'DELETE_ORDER', payload: id });
+    
+    deleteOrder: async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from('purchase_orders')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        dispatch({ type: 'DELETE_ORDER', payload: id });
+        toast.success('Order deleted successfully');
+      } catch (error) {
+        console.error('Error deleting order:', error);
+        toast.error('Failed to delete order');
+      }
     },
+    
     setActiveOrder: (order: PurchaseOrder | null) => {
       dispatch({ type: 'SET_ACTIVE_ORDER', payload: order });
     },
-    updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => {
-      dispatch({ type: 'UPDATE_ORDER_STATUS', payload: { id, status, notes } });
+    
+    updateOrderStatus: async (id: string, status: OrderStatus, notes?: string) => {
+      try {
+        const updates = { 
+          status,
+          ...(notes && { notes })
+        };
+        
+        const { data, error } = await supabase
+          .from('purchase_orders')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        dispatch({ 
+          type: 'UPDATE_ORDER_STATUS', 
+          payload: { id, status, notes } 
+        });
+        
+        toast.success(`Order status updated to ${status}`);
+      } catch (error) {
+        console.error('Error updating order status:', error);
+        toast.error('Failed to update order status');
+      }
     },
-    assignDriver: (id: string, driverId: string, truckId: string) => {
-      dispatch({ type: 'ASSIGN_DRIVER', payload: { id, driverId, truckId } });
+    
+    assignDriver: async (id: string, driverId: string, truckId: string) => {
+      try {
+        // Update order with driver and truck
+        const { data: updatedOrder, error: orderError } = await supabase
+          .from('purchase_orders')
+          .update({ 
+            driver_id: driverId, 
+            assigned_truck_id: truckId,
+            status: 'active'
+          })
+          .eq('id', id)
+          .select()
+          .single();
+          
+        if (orderError) throw orderError;
+        
+        // Add journey info for this assignment
+        const { error: journeyError } = await supabase
+          .from('journey_info')
+          .insert([{
+            purchase_order_id: id,
+            type: 'assignment',
+            message: 'Driver and truck assigned for delivery',
+            timestamp: new Date().toISOString()
+          }]);
+          
+        if (journeyError) throw journeyError;
+        
+        // Update the driver status
+        await supabase
+          .from('drivers')
+          .update({ 
+            status: 'on-duty',
+            assigned_truck_id: truckId
+          })
+          .eq('id', driverId);
+          
+        // Update the truck status
+        await supabase
+          .from('trucks')
+          .update({ 
+            status: 'in-use',
+            assigned_driver_id: driverId
+          })
+          .eq('id', truckId);
+        
+        dispatch({ 
+          type: 'ASSIGN_DRIVER', 
+          payload: { id, driverId, truckId } 
+        });
+        
+        // Reload all data to ensure consistency
+        await loadOrders();
+        
+        toast.success('Driver and truck assigned to order');
+      } catch (error) {
+        console.error('Error assigning driver:', error);
+        toast.error('Failed to assign driver');
+      }
     },
-    updateLocation: (id: string, location: [number, number]) => {
-      dispatch({ 
-        type: 'UPDATE_LOCATION', 
-        payload: { 
-          id, 
-          location,
-          timestamp: new Date().toISOString()
-        } 
-      });
+    
+    updateLocation: async (id: string, location: [number, number]) => {
+      try {
+        // Update order's current location
+        const point = `(${location[0]},${location[1]})`;
+        
+        const { error: orderError } = await supabase
+          .from('purchase_orders')
+          .update({ current_location: point })
+          .eq('id', id);
+          
+        if (orderError) throw orderError;
+        
+        // Add to location history
+        const timestamp = new Date().toISOString();
+        
+        const { error: locationError } = await supabase
+          .from('location_updates')
+          .insert([{
+            purchase_order_id: id,
+            location: point,
+            timestamp
+          }]);
+          
+        if (locationError) throw locationError;
+        
+        dispatch({ 
+          type: 'UPDATE_LOCATION', 
+          payload: { id, location, timestamp } 
+        });
+      } catch (error) {
+        console.error('Error updating location:', error);
+        // Don't show toast for location updates as they're frequent
+      }
     },
-    updateJourneyInfo: (id: string, type: string, message: string) => {
-      dispatch({ 
-        type: 'UPDATE_JOURNEY_INFO', 
-        payload: { 
-          id, 
-          info: {
+    
+    updateJourneyInfo: async (id: string, type: string, message: string) => {
+      try {
+        const timestamp = new Date().toISOString();
+        
+        const { error } = await supabase
+          .from('journey_info')
+          .insert([{
+            purchase_order_id: id,
             type,
             message,
-            timestamp: new Date().toISOString()
-          }
-        } 
-      });
+            timestamp
+          }]);
+          
+        if (error) throw error;
+        
+        dispatch({ 
+          type: 'UPDATE_JOURNEY_INFO', 
+          payload: { 
+            id, 
+            info: { type, message, timestamp } 
+          } 
+        });
+      } catch (error) {
+        console.error('Error updating journey info:', error);
+      }
     },
-    completeDelivery: (id: string, volumeDelivered: string) => {
-      dispatch({ type: 'COMPLETE_DELIVERY', payload: { id, volumeDelivered } });
+    
+    completeDelivery: async (id: string, volumeDelivered: string) => {
+      try {
+        // First get the current order to calculate volume difference
+        const currentOrder = state.orders.find(o => o.id === id);
+        if (!currentOrder) {
+          throw new Error('Order not found');
+        }
+        
+        const volumeAtLoading = parseFloat(currentOrder.quantity.replace(/,/g, ''));
+        const volumeAtDelivery = parseFloat(volumeDelivered.replace(/,/g, ''));
+        const difference = (volumeAtLoading - volumeAtDelivery) / volumeAtLoading * 100;
+        
+        const newStatus: OrderStatus = difference >= 3 ? 'flagged' : 'completed';
+        const notes = difference >= 3 
+          ? `Flagged: Volume difference of ${difference.toFixed(2)}% detected` 
+          : `Completed: Delivered volume matches expected (${difference.toFixed(2)}% difference)`;
+        
+        // Update the order
+        const { error: orderError } = await supabase
+          .from('purchase_orders')
+          .update({
+            status: newStatus,
+            volume_at_delivery: volumeDelivered,
+            volume_at_loading: currentOrder.quantity,
+            delivery_date: new Date().toISOString().split('T')[0],
+            notes
+          })
+          .eq('id', id);
+          
+        if (orderError) throw orderError;
+        
+        // Add journey info for completion
+        const { error: journeyError } = await supabase
+          .from('journey_info')
+          .insert([{
+            purchase_order_id: id,
+            type: newStatus,
+            message: `Delivery ${newStatus}. ${notes}`,
+            timestamp: new Date().toISOString()
+          }]);
+          
+        if (journeyError) throw journeyError;
+        
+        // If there's an assigned driver and truck, update their status
+        if (currentOrder.driver_id) {
+          await supabase
+            .from('drivers')
+            .update({ 
+              status: 'available',
+              assigned_truck_id: null,
+              last_trip: new Date().toISOString().split('T')[0]
+            })
+            .eq('id', currentOrder.driver_id);
+        }
+        
+        if (currentOrder.assigned_truck_id) {
+          await supabase
+            .from('trucks')
+            .update({ 
+              status: 'available',
+              assigned_driver_id: null
+            })
+            .eq('id', currentOrder.assigned_truck_id);
+        }
+        
+        dispatch({ 
+          type: 'COMPLETE_DELIVERY', 
+          payload: { id, volumeDelivered } 
+        });
+        
+        // Reload all data to ensure consistency
+        await loadOrders();
+        
+        toast.success(`Delivery ${newStatus}`);
+      } catch (error) {
+        console.error('Error completing delivery:', error);
+        toast.error('Failed to complete delivery');
+      }
     }
   };
 

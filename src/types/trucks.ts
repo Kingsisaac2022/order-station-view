@@ -1,17 +1,18 @@
 
 export interface Truck {
   id: string;
-  plateNo: string;
+  plate_no: string;
   model: string;
   capacity: string;
-  fuelCapacity: string;
-  assignedDriverId?: string;
+  fuel_capacity: string;
+  assigned_driver_id?: string;
   status: 'available' | 'in-use' | 'maintenance' | 'out-of-service';
-  gpsEnabled: boolean;
-  gpsId?: string;
-  currentLocation?: [number, number];
-  fuelLevel?: number; // percentage of fuel remaining
-  lastMaintenance?: string; // date of last maintenance
+  gps_enabled: boolean;
+  gps_id?: string;
+  current_location?: [number, number];
+  fuel_level?: number; // percentage of fuel remaining
+  last_maintenance?: string; // date of last maintenance
   notes?: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
 }

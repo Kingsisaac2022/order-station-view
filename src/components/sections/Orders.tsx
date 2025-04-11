@@ -1,11 +1,12 @@
 
 import React from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { ShoppingCart, FileText, ExternalLink } from 'lucide-react';
+import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { useOrders } from '@/context/OrderContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Orders: React.FC = () => {
   // We'll use window.location for navigation
@@ -15,7 +16,12 @@ const Orders: React.FC = () => {
     toast.success('Navigating to Create Purchase Order page');
   };
   
-  const { orders } = useOrders();
+  const { orders, isLoading, error, loadOrders } = useOrders();
+  
+  const handleRefresh = async () => {
+    await loadOrders();
+    toast.success('Orders refreshed');
+  };
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -38,17 +44,47 @@ const Orders: React.FC = () => {
     window.location.href = `/order/${id}`;
   };
   
+  if (error) {
+    return (
+      <DashboardPanel title="Orders" icon={<ShoppingCart size={16} />}>
+        <div className="flex flex-col items-center justify-center h-48 gap-4">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <p className="text-red-500">Error loading orders: {error}</p>
+          <Button onClick={handleRefresh}>
+            <RefreshCcw size={16} className="mr-2" />
+            Retry
+          </Button>
+        </div>
+      </DashboardPanel>
+    );
+  }
+  
   return (
     <DashboardPanel title="Orders" icon={<ShoppingCart size={16} />}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Order Management</h2>
-        <Button 
-          onClick={handleCreateOrder}
-          className="flex items-center gap-2"
-        >
-          <FileText size={16} />
-          Create Purchase Order
-        </Button>
+        <div className="flex gap-2">
+          {isLoading ? (
+            <Skeleton className="h-10 w-10" />
+          ) : (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleRefresh}
+              className="h-10 w-10"
+            >
+              <RefreshCcw size={16} />
+              <span className="sr-only">Refresh orders</span>
+            </Button>
+          )}
+          <Button 
+            onClick={handleCreateOrder}
+            className="flex items-center gap-2"
+          >
+            <FileText size={16} />
+            Create Purchase Order
+          </Button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -63,7 +99,18 @@ const Orders: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 ? (
+            {isLoading ? (
+              Array(5).fill(0).map((_, i) => (
+                <tr key={i} className="border-b border-border/10 h-14">
+                  <td><Skeleton className="h-4 w-24" /></td>
+                  <td><Skeleton className="h-4 w-24" /></td>
+                  <td><Skeleton className="h-4 w-32" /></td>
+                  <td className="text-right"><Skeleton className="h-4 w-24 ml-auto" /></td>
+                  <td className="text-center"><Skeleton className="h-6 w-20 mx-auto" /></td>
+                  <td className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></td>
+                </tr>
+              ))
+            ) : orders.length === 0 ? (
               <tr className="h-16">
                 <td colSpan={6} className="text-center text-muted-foreground">
                   No orders yet
@@ -72,10 +119,10 @@ const Orders: React.FC = () => {
             ) : (
               orders.map((order) => (
                 <tr key={order.id} className="border-b border-border/10 h-14">
-                  <td className="py-4">{order.poNumber}</td>
+                  <td className="py-4">{order.po_number}</td>
                   <td>{order.date}</td>
-                  <td>{order.productType}</td>
-                  <td className="text-right">{order.totalAmount}</td>
+                  <td>{order.product_type}</td>
+                  <td className="text-right">{order.total_amount}</td>
                   <td className="text-center">
                     <Badge className={`${getStatusColor(order.status)}`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
