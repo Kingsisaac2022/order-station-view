@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -18,6 +17,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { ArrowLeft, FileText } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import { useOrders } from '@/context/OrderContext';
+import { PurchaseOrder } from '@/types/orders';
 
 const purchaseOrderSchema = z.object({
   poNumber: z.string().min(1, { message: "PO Number is required" }),
@@ -47,6 +49,7 @@ type PurchaseOrderFormValues = z.infer<typeof purchaseOrderSchema>;
 
 const CreatePurchaseOrder: React.FC = () => {
   const navigate = useNavigate();
+  const { addOrder, setActiveOrder } = useOrders();
   
   const form = useForm<PurchaseOrderFormValues>({
     resolver: zodResolver(purchaseOrderSchema),
@@ -67,12 +70,24 @@ const CreatePurchaseOrder: React.FC = () => {
   });
 
   const onSubmit = (data: PurchaseOrderFormValues) => {
-    console.log(data);
-    // In a real application, you'd send this data to your backend
-    navigate('/');
+    const newOrder: PurchaseOrder = {
+      id: Date.now().toString(),
+      ...data,
+      status: 'pending',
+      origin: [3.3792, 6.4550],
+      destinationCoords: [3.3886, 6.4281],
+    };
+    
+    addOrder(newOrder);
+    setActiveOrder(newOrder);
+    
+    toast.success('Purchase order created successfully!', {
+      description: 'Order is now pending payment verification.',
+    });
+    
+    navigate(`/order/${newOrder.id}`);
   };
 
-  // Calculate total amount when price per litre changes
   const calculateTotal = () => {
     const quantity = parseFloat(form.getValues('quantity').replace(/,/g, '')) || 0;
     const price = parseFloat(form.getValues('pricePerLitre').replace(/,/g, '').replace('₦', '')) || 0;
@@ -108,7 +123,6 @@ const CreatePurchaseOrder: React.FC = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Purchase Order Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -138,7 +152,6 @@ const CreatePurchaseOrder: React.FC = () => {
                   />
                 </div>
 
-                {/* Depot Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -168,7 +181,6 @@ const CreatePurchaseOrder: React.FC = () => {
                   />
                 </div>
 
-                {/* Product Information */}
                 <div className="p-4 bg-dark border border-border/10 rounded-md">
                   <h3 className="font-medium mb-4">Product Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -233,7 +245,6 @@ const CreatePurchaseOrder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Delivery Details */}
                 <div className="p-4 bg-dark border border-border/10 rounded-md">
                   <h3 className="font-medium mb-4">Delivery Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -305,7 +316,6 @@ const CreatePurchaseOrder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Payment Details */}
                 <div className="p-4 bg-dark border border-border/10 rounded-md">
                   <h3 className="font-medium mb-4">Payment Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -377,7 +387,6 @@ const CreatePurchaseOrder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Authorization */}
                 <div className="p-4 bg-dark border border-border/10 rounded-md">
                   <h3 className="font-medium mb-4">Authorization</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
