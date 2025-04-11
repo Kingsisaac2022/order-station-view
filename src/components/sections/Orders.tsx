@@ -4,16 +4,23 @@ import DashboardPanel from '../DashboardPanel';
 import { ShoppingCart, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Orders: React.FC = () => {
-  const navigate = useNavigate();
+  // We'll replace direct navigation with a function that uses window.location
+  // This avoids the Router context requirement
+  const handleCreateOrder = () => {
+    window.location.href = '/create-purchase-order';
+    // Show toast notification when navigating
+    toast.success('Navigating to Create Purchase Order page');
+  };
   
   return (
     <DashboardPanel title="Orders" icon={<ShoppingCart size={16} />}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Order Management</h2>
         <Button 
-          onClick={() => navigate('/create-purchase-order')}
+          onClick={handleCreateOrder}
           className="flex items-center gap-2"
         >
           <FileText size={16} />
