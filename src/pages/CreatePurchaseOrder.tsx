@@ -1,9 +1,9 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
@@ -72,7 +72,27 @@ const CreatePurchaseOrder: React.FC = () => {
   const onSubmit = (data: PurchaseOrderFormValues) => {
     const newOrder: PurchaseOrder = {
       id: Date.now().toString(),
-      ...data,
+      poNumber: data.poNumber,
+      date: data.date,
+      depotManager: data.depotManager,
+      depotLocation: data.depotLocation,
+      productType: data.productType,
+      quantity: data.quantity,
+      pricePerLitre: data.pricePerLitre,
+      totalAmount: data.totalAmount,
+      loadingLocation: data.loadingLocation,
+      destination: data.destination,
+      expectedLoadingDate: data.expectedLoadingDate,
+      truckPlateNumber: data.truckPlateNumber,
+      transportCompany: data.transportCompany,
+      paymentReference: data.paymentReference,
+      bankName: data.bankName,
+      paymentDate: data.paymentDate,
+      amountPaid: data.amountPaid,
+      paymentType: data.paymentType,
+      authorizedBy: data.authorizedBy,
+      authorizedPosition: data.authorizedPosition,
+      authorizedCompany: data.authorizedCompany,
       status: 'pending',
       origin: [3.3792, 6.4550],
       destinationCoords: [3.3886, 6.4281],

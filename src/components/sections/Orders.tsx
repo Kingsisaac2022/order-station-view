@@ -8,8 +8,7 @@ import { toast } from 'sonner';
 import { useOrders } from '@/context/OrderContext';
 
 const Orders: React.FC = () => {
-  // We'll replace direct navigation with a function that uses window.location
-  // This avoids the Router context requirement
+  // We'll use window.location for navigation
   const handleCreateOrder = () => {
     window.location.href = '/create-purchase-order';
     // Show toast notification when navigating
