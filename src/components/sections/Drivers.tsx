@@ -26,8 +26,8 @@ const Drivers: React.FC = () => {
   
   // Form state
   const [name, setName] = useState('');
-  const [licenseNo, setLicenseNo] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [license_no, setLicenseNo] = useState('');
+  const [phone_number, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Driver['status']>('pending-approval');
   const [notes, setNotes] = useState('');
@@ -43,15 +43,15 @@ const Drivers: React.FC = () => {
   };
   
   const handleAdd = () => {
-    const newDriver: Driver = {
-      id: `driver-${Date.now()}`,
+    const newDriver = {
       name,
-      licenseNo,
-      phoneNumber,
+      license_no,
+      phone_number,
       email,
       status,
       notes,
-      createdAt: new Date().toISOString().split('T')[0]
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     addDriver(newDriver);
@@ -62,17 +62,18 @@ const Drivers: React.FC = () => {
   const handleEdit = () => {
     if (!currentDriver) return;
     
-    const updatedDriver: Driver = {
-      ...currentDriver,
+    const updatedDriver = {
+      id: currentDriver.id,
       name,
-      licenseNo,
-      phoneNumber,
+      license_no,
+      phone_number,
       email,
       status,
-      notes
+      notes,
+      updated_at: new Date().toISOString()
     };
     
-    updateDriver(updatedDriver);
+    updateDriver(currentDriver.id, updatedDriver);
     setIsEditDialogOpen(false);
     resetForm();
   };
@@ -87,8 +88,8 @@ const Drivers: React.FC = () => {
   const openEditDialog = (driver: Driver) => {
     setCurrentDriver(driver);
     setName(driver.name);
-    setLicenseNo(driver.licenseNo);
-    setPhoneNumber(driver.phoneNumber || '');
+    setLicenseNo(driver.license_no);
+    setPhoneNumber(driver.phone_number || '');
     setEmail(driver.email || '');
     setStatus(driver.status);
     setNotes(driver.notes || '');
@@ -148,10 +149,10 @@ const Drivers: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="licenseNo">License Number</Label>
+                    <Label htmlFor="license_no">License Number</Label>
                     <Input
-                      id="licenseNo"
-                      value={licenseNo}
+                      id="license_no"
+                      value={license_no}
                       onChange={(e) => setLicenseNo(e.target.value)}
                       placeholder="License number"
                     />
@@ -162,7 +163,7 @@ const Drivers: React.FC = () => {
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
-                      value={phoneNumber}
+                      value={phone_number}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="Phone number"
                     />
@@ -210,7 +211,7 @@ const Drivers: React.FC = () => {
                 }}>Cancel</Button>
                 <Button 
                   onClick={handleAdd}
-                  disabled={!name || !licenseNo}
+                  disabled={!name || !license_no}
                   className="bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   Add Driver
@@ -243,14 +244,14 @@ const Drivers: React.FC = () => {
                 drivers.map((driver) => (
                   <tr key={driver.id} className="border-b border-border/10 h-14">
                     <td>{driver.name}</td>
-                    <td>{driver.licenseNo}</td>
-                    <td>{driver.phoneNumber}</td>
+                    <td>{driver.license_no}</td>
+                    <td>{driver.phone_number}</td>
                     <td>
                       <Badge className={getStatusColor(driver.status)}>
                         {driver.status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </Badge>
                     </td>
-                    <td className="text-right">{driver.lastTrip || 'N/A'}</td>
+                    <td className="text-right">{driver.last_trip || 'N/A'}</td>
                     <td className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button 
@@ -301,10 +302,10 @@ const Drivers: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-licenseNo">License Number</Label>
+                <Label htmlFor="edit-license_no">License Number</Label>
                 <Input
-                  id="edit-licenseNo"
-                  value={licenseNo}
+                  id="edit-license_no"
+                  value={license_no}
                   onChange={(e) => setLicenseNo(e.target.value)}
                 />
               </div>
@@ -314,7 +315,7 @@ const Drivers: React.FC = () => {
                 <Label htmlFor="edit-phone">Phone Number</Label>
                 <Input
                   id="edit-phone"
-                  value={phoneNumber}
+                  value={phone_number}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
@@ -359,7 +360,7 @@ const Drivers: React.FC = () => {
             }}>Cancel</Button>
             <Button 
               onClick={handleEdit}
-              disabled={!name || !licenseNo}
+              disabled={!name || !license_no}
               className="bg-yellow-500 hover:bg-yellow-600 text-black"
             >
               Update Driver
@@ -381,7 +382,7 @@ const Drivers: React.FC = () => {
             {currentDriver && (
               <div className="border border-border/20 rounded-md p-4">
                 <p><strong>Name:</strong> {currentDriver.name}</p>
-                <p><strong>License No:</strong> {currentDriver.licenseNo}</p>
+                <p><strong>License No:</strong> {currentDriver.license_no}</p>
               </div>
             )}
           </div>

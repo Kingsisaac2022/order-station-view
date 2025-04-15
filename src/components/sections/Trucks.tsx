@@ -27,13 +27,13 @@ const Trucks: React.FC = () => {
   const [currentTruck, setCurrentTruck] = useState<Truck | null>(null);
   
   // Form state
-  const [plateNo, setPlateNo] = useState('');
+  const [plate_no, setPlateNo] = useState('');
   const [model, setModel] = useState('');
   const [capacity, setCapacity] = useState('');
-  const [fuelCapacity, setFuelCapacity] = useState('');
+  const [fuel_capacity, setFuelCapacity] = useState('');
   const [status, setStatus] = useState<Truck['status']>('available');
-  const [gpsEnabled, setGpsEnabled] = useState(false);
-  const [gpsId, setGpsId] = useState('');
+  const [gps_enabled, setGpsEnabled] = useState(false);
+  const [gps_id, setGpsId] = useState('');
   const [notes, setNotes] = useState('');
   
   const resetForm = () => {
@@ -49,25 +49,25 @@ const Trucks: React.FC = () => {
   };
   
   const handleAdd = () => {
-    const newTruck: Truck = {
-      id: `truck-${Date.now()}`,
-      plateNo,
+    const newTruck = {
+      plate_no,
       model,
       capacity,
-      fuelCapacity,
+      fuel_capacity,
       status,
-      gpsEnabled,
-      gpsId: gpsEnabled ? (gpsId || `GPS-${Date.now().toString().slice(-6)}`) : undefined,
+      gps_enabled,
+      gps_id: gps_enabled ? (gps_id || `GPS-${Date.now().toString().slice(-6)}`) : undefined,
       notes,
-      createdAt: new Date().toISOString().split('T')[0]
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     // Generate a random location in Nigeria if GPS is enabled
-    if (gpsEnabled) {
+    if (gps_enabled) {
       // Nigeria approximate bounds: lat 4-14, lng 2-15
       const lat = 4 + Math.random() * 10; // between 4 and 14
       const lng = 2 + Math.random() * 13; // between 2 and 15
-      newTruck.currentLocation = [lng, lat];
+      newTruck.current_location = [lng, lat];
     }
     
     addTruck(newTruck);
@@ -78,34 +78,35 @@ const Trucks: React.FC = () => {
   const handleEdit = () => {
     if (!currentTruck) return;
     
-    const updatedTruck: Truck = {
-      ...currentTruck,
-      plateNo,
+    const updatedTruck = {
+      id: currentTruck.id,
+      plate_no,
       model,
       capacity,
-      fuelCapacity,
+      fuel_capacity,
       status,
-      gpsEnabled,
-      notes
+      gps_enabled,
+      notes,
+      updated_at: new Date().toISOString()
     };
     
     // Update GPS ID if GPS is enabled
-    if (gpsEnabled) {
-      updatedTruck.gpsId = gpsId || updatedTruck.gpsId || `GPS-${Date.now().toString().slice(-6)}`;
+    if (gps_enabled) {
+      updatedTruck.gps_id = gps_id || currentTruck.gps_id || `GPS-${Date.now().toString().slice(-6)}`;
       
       // Generate location if newly GPS enabled and no location exists
-      if (!currentTruck.gpsEnabled && !updatedTruck.currentLocation) {
+      if (!currentTruck.gps_enabled && !currentTruck.current_location) {
         const lat = 4 + Math.random() * 10; // between 4 and 14
         const lng = 2 + Math.random() * 13; // between 2 and 15
-        updatedTruck.currentLocation = [lng, lat];
+        updatedTruck.current_location = [lng, lat];
       }
     } else {
       // Remove GPS data if disabled
-      updatedTruck.gpsId = undefined;
-      updatedTruck.currentLocation = undefined;
+      updatedTruck.gps_id = undefined;
+      updatedTruck.current_location = undefined;
     }
     
-    updateTruck(updatedTruck);
+    updateTruck(currentTruck.id, updatedTruck);
     setIsEditDialogOpen(false);
     resetForm();
   };
@@ -119,13 +120,13 @@ const Trucks: React.FC = () => {
   
   const openEditDialog = (truck: Truck) => {
     setCurrentTruck(truck);
-    setPlateNo(truck.plateNo);
+    setPlateNo(truck.plate_no);
     setModel(truck.model);
     setCapacity(truck.capacity);
-    setFuelCapacity(truck.fuelCapacity || '');
+    setFuelCapacity(truck.fuel_capacity || '');
     setStatus(truck.status);
-    setGpsEnabled(truck.gpsEnabled || false);
-    setGpsId(truck.gpsId || '');
+    setGpsEnabled(truck.gps_enabled || false);
+    setGpsId(truck.gps_id || '');
     setNotes(truck.notes || '');
     setIsEditDialogOpen(true);
   };
@@ -151,10 +152,10 @@ const Trucks: React.FC = () => {
   };
   
   const viewTruckLocation = (truck: Truck) => {
-    if (truck.currentLocation) {
-      toast.info(`Truck ${truck.plateNo} is at coordinates: ${truck.currentLocation[1].toFixed(4)}, ${truck.currentLocation[0].toFixed(4)}`);
+    if (truck.current_location) {
+      toast.info(`Truck ${truck.plate_no} is at coordinates: ${truck.current_location[1].toFixed(4)}, ${truck.current_location[0].toFixed(4)}`);
     } else {
-      toast.warning(`No location data available for truck ${truck.plateNo}`);
+      toast.warning(`No location data available for truck ${truck.plate_no}`);
     }
   };
   
@@ -180,10 +181,10 @@ const Trucks: React.FC = () => {
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="plateNo">License Plate</Label>
+                    <Label htmlFor="plate_no">License Plate</Label>
                     <Input
-                      id="plateNo"
-                      value={plateNo}
+                      id="plate_no"
+                      value={plate_no}
                       onChange={(e) => setPlateNo(e.target.value)}
                       placeholder="License plate"
                     />
@@ -209,10 +210,10 @@ const Trucks: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="fuelCapacity">Fuel Tank Capacity</Label>
+                    <Label htmlFor="fuel_capacity">Fuel Tank Capacity</Label>
                     <Input
-                      id="fuelCapacity"
-                      value={fuelCapacity}
+                      id="fuel_capacity"
+                      value={fuel_capacity}
                       onChange={(e) => setFuelCapacity(e.target.value)}
                       placeholder="e.g. 200 litres"
                     />
@@ -234,20 +235,20 @@ const Trucks: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="gpsEnabled">GPS Tracking Enabled</Label>
+                    <Label htmlFor="gps_enabled">GPS Tracking Enabled</Label>
                     <Switch 
-                      id="gpsEnabled" 
-                      checked={gpsEnabled} 
+                      id="gps_enabled" 
+                      checked={gps_enabled} 
                       onCheckedChange={setGpsEnabled} 
                       className="data-[state=checked]:bg-yellow-500"
                     />
                   </div>
-                  {gpsEnabled && (
+                  {gps_enabled && (
                     <div className="mt-2">
-                      <Label htmlFor="gpsId">GPS ID (optional)</Label>
+                      <Label htmlFor="gps_id">GPS ID (optional)</Label>
                       <Input
-                        id="gpsId"
-                        value={gpsId}
+                        id="gps_id"
+                        value={gps_id}
                         onChange={(e) => setGpsId(e.target.value)}
                         placeholder="Auto-generated if blank"
                       />
@@ -274,7 +275,7 @@ const Trucks: React.FC = () => {
                 }}>Cancel</Button>
                 <Button 
                   onClick={handleAdd}
-                  disabled={!plateNo || !model || !capacity}
+                  disabled={!plate_no || !model || !capacity}
                   className="bg-yellow-500 hover:bg-yellow-600 text-black"
                 >
                   Add Truck
@@ -306,7 +307,7 @@ const Trucks: React.FC = () => {
               ) : (
                 trucks.map((truck) => (
                   <tr key={truck.id} className="border-b border-border/10 h-14">
-                    <td>{truck.plateNo}</td>
+                    <td>{truck.plate_no}</td>
                     <td>{truck.model}</td>
                     <td>{truck.capacity}</td>
                     <td>
@@ -315,7 +316,7 @@ const Trucks: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="text-center">
-                      {truck.gpsEnabled ? (
+                      {truck.gps_enabled ? (
                         <div className="flex items-center justify-center">
                           <span 
                             className="text-green-500 flex items-center cursor-pointer"
@@ -371,10 +372,10 @@ const Trucks: React.FC = () => {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-plateNo">License Plate</Label>
+                <Label htmlFor="edit-plate_no">License Plate</Label>
                 <Input
-                  id="edit-plateNo"
-                  value={plateNo}
+                  id="edit-plate_no"
+                  value={plate_no}
                   onChange={(e) => setPlateNo(e.target.value)}
                 />
               </div>
@@ -397,10 +398,10 @@ const Trucks: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-fuelCapacity">Fuel Tank Capacity</Label>
+                <Label htmlFor="edit-fuel_capacity">Fuel Tank Capacity</Label>
                 <Input
-                  id="edit-fuelCapacity"
-                  value={fuelCapacity}
+                  id="edit-fuel_capacity"
+                  value={fuel_capacity}
                   onChange={(e) => setFuelCapacity(e.target.value)}
                 />
               </div>
@@ -421,20 +422,20 @@ const Trucks: React.FC = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="edit-gpsEnabled">GPS Tracking Enabled</Label>
+                <Label htmlFor="edit-gps_enabled">GPS Tracking Enabled</Label>
                 <Switch 
-                  id="edit-gpsEnabled" 
-                  checked={gpsEnabled} 
+                  id="edit-gps_enabled" 
+                  checked={gps_enabled} 
                   onCheckedChange={setGpsEnabled} 
                   className="data-[state=checked]:bg-yellow-500"
                 />
               </div>
-              {gpsEnabled && (
+              {gps_enabled && (
                 <div className="mt-2">
-                  <Label htmlFor="edit-gpsId">GPS ID</Label>
+                  <Label htmlFor="edit-gps_id">GPS ID</Label>
                   <Input
-                    id="edit-gpsId"
-                    value={gpsId}
+                    id="edit-gps_id"
+                    value={gps_id}
                     onChange={(e) => setGpsId(e.target.value)}
                     placeholder="Auto-generated if blank"
                   />
@@ -457,7 +458,7 @@ const Trucks: React.FC = () => {
             }}>Cancel</Button>
             <Button 
               onClick={handleEdit}
-              disabled={!plateNo || !model || !capacity}
+              disabled={!plate_no || !model || !capacity}
               className="bg-yellow-500 hover:bg-yellow-600 text-black"
             >
               Update Truck
@@ -478,7 +479,7 @@ const Trucks: React.FC = () => {
           <div className="py-4">
             {currentTruck && (
               <div className="border border-border/20 rounded-md p-4">
-                <p><strong>Plate No:</strong> {currentTruck.plateNo}</p>
+                <p><strong>Plate No:</strong> {currentTruck.plate_no}</p>
                 <p><strong>Model:</strong> {currentTruck.model}</p>
                 <p><strong>Capacity:</strong> {currentTruck.capacity}</p>
               </div>

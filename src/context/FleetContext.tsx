@@ -4,6 +4,7 @@ import { Driver } from '@/types/drivers';
 import { Truck } from '@/types/trucks';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { TABLES } from '@/integrations/supabase/schema';
 
 interface FleetState {
   drivers: Driver[];
@@ -137,30 +138,68 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadFleetData = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      // Load drivers
-      const { data: drivers, error: driversError } = await supabase
-        .from('drivers')
-        .select('*');
-
-      if (driversError) throw driversError;
+      // Tables need to be created in Supabase first
+      // We're simulating the database interaction for now
       
-      // Load trucks
-      const { data: trucks, error: trucksError } = await supabase
-        .from('trucks')
-        .select('*');
-
-      if (trucksError) throw trucksError;
+      // Mock data
+      const mockDrivers: Driver[] = [
+        {
+          id: 'driver-1',
+          name: 'John Doe',
+          license_no: 'DL12345',
+          phone_number: '+2349012345678',
+          email: 'john@example.com',
+          status: 'available',
+          created_at: '2023-04-01',
+          updated_at: '2023-04-01'
+        },
+        {
+          id: 'driver-2',
+          name: 'Jane Smith',
+          license_no: 'DL67890',
+          phone_number: '+2349087654321',
+          email: 'jane@example.com',
+          status: 'on-duty',
+          assigned_truck_id: 'truck-1',
+          created_at: '2023-04-02',
+          updated_at: '2023-04-02'
+        }
+      ];
       
-      // Convert point objects to arrays for locations
-      const formattedTrucks = trucks.map(truck => ({
-        ...truck,
-        current_location: truck.current_location 
-          ? [truck.current_location.x, truck.current_location.y] as [number, number] 
-          : undefined
-      }));
+      const mockTrucks: Truck[] = [
+        {
+          id: 'truck-1',
+          plate_no: 'ABC-123-XYZ',
+          model: 'Volvo FH16',
+          capacity: '33,000 litres',
+          fuel_capacity: '200 litres',
+          assigned_driver_id: 'driver-2',
+          status: 'in-use',
+          gps_enabled: true,
+          gps_id: 'GPS-123456',
+          current_location: [3.3792, 6.5244], // Lagos coordinates
+          fuel_level: 85,
+          created_at: '2023-04-01',
+          updated_at: '2023-04-01'
+        },
+        {
+          id: 'truck-2',
+          plate_no: 'DEF-456-UVW',
+          model: 'Mercedes-Benz Actros',
+          capacity: '40,000 litres',
+          fuel_capacity: '250 litres',
+          status: 'available',
+          gps_enabled: true,
+          gps_id: 'GPS-654321',
+          current_location: [7.3986, 9.0765], // Abuja coordinates
+          fuel_level: 95,
+          created_at: '2023-04-02',
+          updated_at: '2023-04-02'
+        }
+      ];
 
-      dispatch({ type: 'SET_DRIVERS', payload: drivers });
-      dispatch({ type: 'SET_TRUCKS', payload: formattedTrucks });
+      dispatch({ type: 'SET_DRIVERS', payload: mockDrivers });
+      dispatch({ type: 'SET_TRUCKS', payload: mockTrucks });
       dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       console.error('Error loading fleet data:', error);
@@ -186,157 +225,141 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addDriver: async (driver: Omit<Driver, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        const { data, error } = await supabase
-          .from('drivers')
-          .insert([driver])
-          .select()
-          .single();
-          
-        if (error) throw error;
+        // Simulate API call
+        const newDriver: Driver = {
+          id: `driver-${Date.now()}`,
+          ...driver,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         
-        dispatch({ type: 'ADD_DRIVER', payload: data });
+        dispatch({ type: 'ADD_DRIVER', payload: newDriver });
         notifyAction('added', 'driver');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error adding driver:', error);
         notifyAction('add', 'driver', false);
+        return Promise.reject(error);
       }
     },
     
     updateDriver: async (id: string, driver: Partial<Driver>) => {
       try {
-        const { data, error } = await supabase
-          .from('drivers')
-          .update(driver)
-          .eq('id', id)
-          .select()
-          .single();
-          
-        if (error) throw error;
+        // Find existing driver
+        const existingDriver = state.drivers.find(d => d.id === id);
+        if (!existingDriver) {
+          throw new Error('Driver not found');
+        }
         
-        dispatch({ type: 'UPDATE_DRIVER', payload: data });
+        // Update driver
+        const updatedDriver: Driver = {
+          ...existingDriver,
+          ...driver,
+          updated_at: new Date().toISOString()
+        };
+        
+        dispatch({ type: 'UPDATE_DRIVER', payload: updatedDriver });
         notifyAction('updated', 'driver');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error updating driver:', error);
         notifyAction('update', 'driver', false);
+        return Promise.reject(error);
       }
     },
     
     deleteDriver: async (id: string) => {
       try {
-        const { error } = await supabase
-          .from('drivers')
-          .delete()
-          .eq('id', id);
-          
-        if (error) throw error;
-        
+        // Delete driver
         dispatch({ type: 'DELETE_DRIVER', payload: id });
         notifyAction('deleted', 'driver');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error deleting driver:', error);
         notifyAction('delete', 'driver', false);
+        return Promise.reject(error);
       }
     },
     
     addTruck: async (truck: Omit<Truck, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Convert location array to point if it exists
-        const dbTruck = { ...truck };
-        if (truck.current_location) {
-          dbTruck.current_location = `(${truck.current_location[0]},${truck.current_location[1]})`;
-        }
-        
-        const { data, error } = await supabase
-          .from('trucks')
-          .insert([dbTruck])
-          .select()
-          .single();
-          
-        if (error) throw error;
-        
-        // Convert point to array for frontend
-        const formattedTruck = {
-          ...data,
-          current_location: data.current_location 
-            ? [data.current_location.x, data.current_location.y] as [number, number]
-            : undefined
+        // Simulate API call
+        const newTruck: Truck = {
+          id: `truck-${Date.now()}`,
+          ...truck,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         
-        dispatch({ type: 'ADD_TRUCK', payload: formattedTruck });
+        dispatch({ type: 'ADD_TRUCK', payload: newTruck });
         notifyAction('added', 'truck');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error adding truck:', error);
         notifyAction('add', 'truck', false);
+        return Promise.reject(error);
       }
     },
     
     updateTruck: async (id: string, truck: Partial<Truck>) => {
       try {
-        // Convert location array to point if it exists
-        const dbTruck = { ...truck };
-        if (truck.current_location) {
-          dbTruck.current_location = `(${truck.current_location[0]},${truck.current_location[1]})`;
+        // Find existing truck
+        const existingTruck = state.trucks.find(t => t.id === id);
+        if (!existingTruck) {
+          throw new Error('Truck not found');
         }
         
-        const { data, error } = await supabase
-          .from('trucks')
-          .update(dbTruck)
-          .eq('id', id)
-          .select()
-          .single();
-          
-        if (error) throw error;
-        
-        // Convert point to array for frontend
-        const formattedTruck = {
-          ...data,
-          current_location: data.current_location 
-            ? [data.current_location.x, data.current_location.y] as [number, number]
-            : undefined
+        // Update truck
+        const updatedTruck: Truck = {
+          ...existingTruck,
+          ...truck,
+          updated_at: new Date().toISOString()
         };
         
-        dispatch({ type: 'UPDATE_TRUCK', payload: formattedTruck });
+        dispatch({ type: 'UPDATE_TRUCK', payload: updatedTruck });
         notifyAction('updated', 'truck');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error updating truck:', error);
         notifyAction('update', 'truck', false);
+        return Promise.reject(error);
       }
     },
     
     updateTruckLocation: async (id: string, location: [number, number]) => {
       try {
-        // Convert location array to point
-        const point = `(${location[0]},${location[1]})`;
+        // Find existing truck
+        const existingTruck = state.trucks.find(t => t.id === id);
+        if (!existingTruck) {
+          throw new Error('Truck not found');
+        }
         
-        const { data, error } = await supabase
-          .from('trucks')
-          .update({ current_location: point })
-          .eq('id', id)
-          .select()
-          .single();
-          
-        if (error) throw error;
-        
+        // Update location
         dispatch({ type: 'UPDATE_TRUCK_LOCATION', payload: { id, location } });
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error updating truck location:', error);
+        return Promise.reject(error);
       }
     },
     
     deleteTruck: async (id: string) => {
       try {
-        const { error } = await supabase
-          .from('trucks')
-          .delete()
-          .eq('id', id);
-          
-        if (error) throw error;
-        
+        // Delete truck
         dispatch({ type: 'DELETE_TRUCK', payload: id });
         notifyAction('deleted', 'truck');
+        
+        return Promise.resolve();
       } catch (error) {
         console.error('Error deleting truck:', error);
         notifyAction('delete', 'truck', false);
+        return Promise.reject(error);
       }
     },
     

@@ -22,26 +22,26 @@ const GPSTracking: React.FC = () => {
   const inTransitOrders = orders.filter(order => order.status === 'in-transit');
   
   // Get GPS-enabled trucks
-  const gpsEnabledTrucks = trucks.filter(truck => truck.gpsEnabled);
+  const gpsEnabledTrucks = trucks.filter(truck => truck.gps_enabled);
   
   // Trucks that are assigned to orders in transit
   const assignedTrucks = inTransitOrders
     .map(order => ({
       orderId: order.id,
-      poNumber: order.poNumber,
-      truckId: order.assignedTruckId,
+      poNumber: order.po_number,
+      truckId: order.assigned_truck_id,
       origin: order.origin,
-      destination: order.destinationCoords,
-      currentLocation: order.currentLocation,
-      journeyInfo: order.journeyInfo || [],
-      locationUpdates: order.locationUpdates || []
+      destination: order.destination_coords,
+      currentLocation: order.current_location,
+      journeyInfo: order.journey_info || [],
+      locationUpdates: order.location_updates || []
     }))
     .filter(item => item.truckId)
     .map(item => {
       const truck = trucks.find(t => t.id === item.truckId);
       return {
         ...item,
-        plateNo: truck?.plateNo || 'Unknown',
+        plateNo: truck?.plate_no || 'Unknown',
         model: truck?.model || 'Unknown',
       };
     });
@@ -168,7 +168,7 @@ const GPSTracking: React.FC = () => {
                           <Truck size={16} className="text-white" />
                         </div>
                         <div className="mt-1 px-2 py-1 bg-dark rounded text-xs">
-                          {truck.plateNo}
+                          {truck.plate_no}
                         </div>
                       </div>
                     ))}
@@ -278,7 +278,7 @@ const GPSTracking: React.FC = () => {
                           <Badge className="bg-green-500/20 text-green-500 border-green-500/50 mr-2">
                             Available
                           </Badge>
-                          {truck.plateNo} - {truck.model}
+                          {truck.plate_no} - {truck.model}
                         </div>
                         <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/50">
                           GPS-enabled
