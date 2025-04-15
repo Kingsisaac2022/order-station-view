@@ -1,13 +1,19 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { ArrowLeft, Truck, Route, MapPin, Clock, CloudRain, AlertCircle, Info } from 'lucide-react';
-import { useOrders } from '@/context/OrderContext';
-import { useFleet } from '@/context/FleetContext';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { useOrders } from '@/context/OrderContext';
+import { useFleet } from '@/context/FleetContext';
 import { toast } from 'sonner';
+import TrackingMap from '@/components/tracking/TrackingMap';
+import ProgressBar from '@/components/tracking/ProgressBar';
+import JourneyDetails from '@/components/tracking/JourneyDetails';
+import JourneyUpdates from '@/components/tracking/JourneyUpdates';
+import TransportDetails from '@/components/tracking/TransportDetails';
+import DeliveryDetails from '@/components/tracking/DeliveryDetails';
+import { CloudRain, Truck, Clock, Info } from 'lucide-react';
 
 const TrackOrderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +57,6 @@ const TrackOrderPage: React.FC = () => {
       }
     }
     
-    // Cleanup when leaving the page
     return () => {
       setActiveOrder(null);
     };
@@ -73,7 +78,7 @@ const TrackOrderPage: React.FC = () => {
     }, [navigate, id]);
     return null;
   }
-  
+
   // Format journey info
   const getJourneyInfoIcon = (type: string) => {
     switch (type) {
@@ -151,228 +156,43 @@ const TrackOrderPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="bg-dark-lighter border-border/20 overflow-hidden">
-              <div className="p-4 bg-[#1A2033] h-[300px] relative">
-                <div className="h-full w-full flex flex-col items-center justify-center">
-                  <Route size={48} className="mb-2 text-yellow-400" />
-                  <p className="text-sm text-muted-foreground">
-                    Live map tracking would be displayed here
-                  </p>
-                </div>
-                
-                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="bg-yellow-500 rounded-full p-2 animate-pulse">
-                    <Truck size={24} className="text-black" />
-                  </div>
-                </div>
-                
-                <div className="absolute left-[20%] bottom-[30%] flex flex-col items-center">
-                  <MapPin size={20} className="text-green-500" />
-                  <div className="text-xs bg-dark bg-opacity-75 px-2 py-1 rounded mt-1">
-                    Origin
-                  </div>
-                </div>
-                
-                <div className="absolute right-[20%] bottom-[30%] flex flex-col items-center">
-                  <MapPin size={20} className="text-red-500" />
-                  <div className="text-xs bg-dark bg-opacity-75 px-2 py-1 rounded mt-1">
-                    Destination
-                  </div>
-                </div>
-                
-                <div className="absolute left-[20%] right-[20%] bottom-[30%] h-[3px] bg-gradient-to-r from-green-500 to-red-500"></div>
-              </div>
-              
-              <div className="p-4 border-t border-border/20">
-                <div className="flex justify-between items-center mb-1">
-                  <div className="text-sm font-medium">Journey Progress</div>
-                  <div className="text-sm">{progress.toFixed(0)}%</div>
-                </div>
-                <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-yellow-500 h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <div>
-                    <span className="text-green-500 mr-1">●</span>
-                    {order.loading_location}
-                  </div>
-                  <div>
-                    <span className="text-red-500 mr-1">●</span>
-                    {order.destination}
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <TrackingMap order={order} />
             
-            <Card className="bg-dark-lighter border-border/20">
-              <div className="p-4 border-b border-border/20">
-                <h2 className="text-lg font-medium">Journey Details</h2>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Estimated Time to Destination</div>
-                      <div className="text-lg font-medium flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-yellow-500" />
-                        {estimateArrivalTime()}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Current Speed</div>
-                      <div className="text-lg font-medium">~45-60 km/h</div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Distance Covered</div>
-                      <div className="text-lg font-medium">{progress.toFixed(0)}%</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Status</div>
-                      <div className="text-lg font-medium flex items-center">
-                        <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/50">
-                          In Transit
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">Route Information</div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Departure</span>
-                        <span>{order.loading_location}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Destination</span>
-                        <span>{order.destination}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Expected Loading Date</span>
-                        <span>{order.expected_loading_date}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <div className="bg-dark-lighter border-border/20">
+              <ProgressBar 
+                progress={progress}
+                origin={order.loading_location}
+                destination={order.destination}
+              />
+            </div>
             
-            <Card className="bg-dark-lighter border-border/20">
-              <div className="p-4 border-b border-border/20">
-                <h2 className="text-lg font-medium">Journey Updates</h2>
-              </div>
-              <div className="p-4">
-                {order.journey_info && order.journey_info.length > 0 ? (
-                  <div className="space-y-4">
-                    {[...order.journey_info]
-                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                      .map((info, idx) => (
-                        <div 
-                          key={idx}
-                          className="flex border-b border-border/10 last:border-0 pb-3 last:pb-0"
-                        >
-                          <div className="mr-3 mt-1">{getJourneyInfoIcon(info.type)}</div>
-                          <div className="flex-1">
-                            <div className="font-medium">{info.message}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {formatTime(info.timestamp)} - {formatDate(info.timestamp)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    }
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Info size={24} className="mx-auto mb-2" />
-                    <p>No journey updates available</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <JourneyDetails
+              estimatedArrival={estimateArrivalTime()}
+              progress={progress}
+              loadingLocation={order.loading_location}
+              destination={order.destination}
+              expectedLoadingDate={order.expected_loading_date}
+            />
+            
+            <JourneyUpdates
+              journeyInfo={order.journey_info || []}
+              getJourneyInfoIcon={getJourneyInfoIcon}
+              formatTime={formatTime}
+              formatDate={formatDate}
+            />
           </div>
           
           <div className="space-y-6">
-            <Card className="bg-dark-lighter border-border/20">
-              <div className="p-4 border-b border-border/20">
-                <h2 className="text-lg font-medium">Transport Details</h2>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  {assignedDriver && (
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Driver</div>
-                      <div className="font-medium">{assignedDriver.name}</div>
-                      <div className="text-sm">License: {assignedDriver.license_no}</div>
-                      <div className="text-sm">Contact: {assignedDriver.phone_number}</div>
-                    </div>
-                  )}
-                  
-                  {assignedTruck && (
-                    <>
-                      <Separator />
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground">Vehicle</div>
-                        <div className="font-medium flex items-center">
-                          <Truck size={16} className="mr-2" />
-                          {assignedTruck.plate_no}
-                        </div>
-                        <div className="text-sm">Model: {assignedTruck.model}</div>
-                        <div className="text-sm">Capacity: {assignedTruck.capacity}</div>
-                        <div className="text-sm flex items-center mt-1">
-                          <Badge className="bg-green-500/20 text-green-500 border-green-500/50 mr-2">
-                            GPS Enabled
-                          </Badge>
-                          ID: {assignedTruck.gps_id}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Card>
+            <TransportDetails
+              driver={assignedDriver}
+              truck={assignedTruck}
+            />
             
-            <Card className="bg-dark-lighter border-border/20">
-              <div className="p-4 border-b border-border/20">
-                <h2 className="text-lg font-medium">Delivery Details</h2>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground">Product Type</div>
-                    <div className="font-medium">{order.product_type}</div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground">Quantity</div>
-                    <div className="font-medium">{order.quantity} litres</div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">Quick Actions</div>
-                    <div className="grid gap-2">
-                      <Button 
-                        onClick={() => navigate(`/order/${id}`)}
-                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black flex items-center"
-                      >
-                        <Truck size={16} className="mr-2" />
-                        View Order Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <DeliveryDetails
+              id={order.id}
+              productType={order.product_type}
+              quantity={order.quantity}
+            />
           </div>
         </div>
       </div>
