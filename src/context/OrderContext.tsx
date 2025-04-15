@@ -6,7 +6,7 @@ import { OrderContextType, OrderState } from '../types/order-context';
 import { orderReducer } from '../reducers/orderReducer';
 import { useOrderStatusNotifications } from '../hooks/useOrderStatusNotifications';
 import { safeParseCoordinate } from '../utils/coordinate-utils';
-import { PurchaseOrder } from '../types/orders';
+import { PurchaseOrder, OrderStatus } from '../types/orders';
 
 const initialState: OrderState = {
   orders: [],
@@ -178,7 +178,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ? safeParseCoordinate(data.current_location)
             : undefined,
           location_updates: [],
-          journey_info: []
+          journey_info: [],
+          status: data!.status as OrderStatus, // Cast the string to OrderStatus
         };
         
         dispatch({ type: 'ADD_ORDER', payload: formattedOrder });
@@ -272,7 +273,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .update({ 
             driver_id: driverId, 
             assigned_truck_id: truckId,
-            status: 'active'
+            status: 'active' as OrderStatus  // Explicitly cast as OrderStatus
           })
           .eq('id', id)
           .select()
