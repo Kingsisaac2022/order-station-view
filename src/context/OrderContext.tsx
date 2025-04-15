@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from '@/types/orders';
 import { toast } from 'sonner';
@@ -304,24 +305,25 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (journeyError) throw journeyError;
 
       const formattedOrders = orders.map((order: any) => {
+        // Safely parse the coordinates with proper type checking
         const origin = order.origin ? 
           [
-            parseFloat(typeof order.origin === 'object' && order.origin !== null && 'x' in order.origin ? String(order.origin.x) : '0'), 
-            parseFloat(typeof order.origin === 'object' && order.origin !== null && 'y' in order.origin ? String(order.origin.y) : '0')
+            parseFloat(typeof order.origin === 'object' && order.origin !== null && 'x' in order.origin ? String(order.origin.x || 0) : '0'), 
+            parseFloat(typeof order.origin === 'object' && order.origin !== null && 'y' in order.origin ? String(order.origin.y || 0) : '0')
           ] as [number, number] : 
           undefined;
         
         const destination_coords = order.destination_coords ? 
           [
-            parseFloat(typeof order.destination_coords === 'object' && order.destination_coords !== null && 'x' in order.destination_coords ? String(order.destination_coords.x) : '0'), 
-            parseFloat(typeof order.destination_coords === 'object' && order.destination_coords !== null && 'y' in order.destination_coords ? String(order.destination_coords.y) : '0')
+            parseFloat(typeof order.destination_coords === 'object' && order.destination_coords !== null && 'x' in order.destination_coords ? String(order.destination_coords.x || 0) : '0'), 
+            parseFloat(typeof order.destination_coords === 'object' && order.destination_coords !== null && 'y' in order.destination_coords ? String(order.destination_coords.y || 0) : '0')
           ] as [number, number] : 
           undefined;
         
         const current_location = order.current_location ? 
           [
-            parseFloat(typeof order.current_location === 'object' && order.current_location !== null && 'x' in order.current_location ? String(order.current_location.x) : '0'), 
-            parseFloat(typeof order.current_location === 'object' && order.current_location !== null && 'y' in order.current_location ? String(order.current_location.y) : '0')
+            parseFloat(typeof order.current_location === 'object' && order.current_location !== null && 'x' in order.current_location ? String(order.current_location.x || 0) : '0'), 
+            parseFloat(typeof order.current_location === 'object' && order.current_location !== null && 'y' in order.current_location ? String(order.current_location.y || 0) : '0')
           ] as [number, number] : 
           undefined;
 
@@ -339,8 +341,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ...update,
             location: update.location 
               ? [
-                  parseFloat(typeof update.location === 'object' && update.location !== null && 'x' in update.location ? String(update.location.x) : '0'), 
-                  parseFloat(typeof update.location === 'object' && update.location !== null && 'y' in update.location ? String(update.location.y) : '0')
+                  parseFloat(typeof update.location === 'object' && update.location !== null && 'x' in update.location ? String(update.location.x || 0) : '0'), 
+                  parseFloat(typeof update.location === 'object' && update.location !== null && 'y' in update.location ? String(update.location.y || 0) : '0')
                 ] as [number, number]
               : [0, 0]
           }));
