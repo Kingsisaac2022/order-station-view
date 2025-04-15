@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -72,30 +71,32 @@ const CreatePurchaseOrder: React.FC = () => {
   const onSubmit = (data: PurchaseOrderFormValues) => {
     const newOrder: PurchaseOrder = {
       id: Date.now().toString(),
-      poNumber: data.poNumber,
+      po_number: data.poNumber,
       date: data.date,
-      depotManager: data.depotManager,
-      depotLocation: data.depotLocation,
-      productType: data.productType,
+      depot_manager: data.depotManager,
+      depot_location: data.depotLocation,
+      product_type: data.productType,
       quantity: data.quantity,
-      pricePerLitre: data.pricePerLitre,
-      totalAmount: data.totalAmount,
-      loadingLocation: data.loadingLocation,
+      price_per_litre: data.pricePerLitre,
+      total_amount: data.totalAmount,
+      loading_location: data.loadingLocation,
       destination: data.destination,
-      expectedLoadingDate: data.expectedLoadingDate,
-      truckPlateNumber: data.truckPlateNumber,
-      transportCompany: data.transportCompany,
-      paymentReference: data.paymentReference,
-      bankName: data.bankName,
-      paymentDate: data.paymentDate,
-      amountPaid: data.amountPaid,
-      paymentType: data.paymentType,
-      authorizedBy: data.authorizedBy,
-      authorizedPosition: data.authorizedPosition,
-      authorizedCompany: data.authorizedCompany,
+      expected_loading_date: data.expectedLoadingDate,
+      truck_plate_number: data.truckPlateNumber,
+      transport_company: data.transportCompany,
+      payment_reference: data.paymentReference,
+      bank_name: data.bankName,
+      payment_date: data.paymentDate,
+      amount_paid: data.amountPaid,
+      payment_type: data.paymentType,
+      authorized_by: data.authorizedBy,
+      authorized_position: data.authorizedPosition,
+      authorized_company: data.authorizedCompany,
       status: 'pending',
       origin: [3.3792, 6.4550],
-      destinationCoords: [3.3886, 6.4281],
+      destination_coords: [3.3886, 6.4281],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     addOrder(newOrder);

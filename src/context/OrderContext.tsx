@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from '@/types/orders';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -298,12 +298,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const formattedOrders = orders.map((order: any) => {
         const formattedOrder: PurchaseOrder = {
           ...order,
-          origin: order.origin ? [order.origin.x, order.origin.y] as [number, number] : undefined,
+          status: order.status as OrderStatus,
+          origin: order.origin 
+            ? [parseFloat(order.origin.x), parseFloat(order.origin.y)] as [number, number]
+            : undefined,
           destination_coords: order.destination_coords 
-            ? [order.destination_coords.x, order.destination_coords.y] as [number, number] 
+            ? [parseFloat(order.destination_coords.x), parseFloat(order.destination_coords.y)] as [number, number]
             : undefined,
           current_location: order.current_location 
-            ? [order.current_location.x, order.current_location.y] as [number, number] 
+            ? [parseFloat(order.current_location.x), parseFloat(order.current_location.y)] as [number, number]
             : undefined
         };
         
@@ -311,7 +314,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .filter((update: any) => update.purchase_order_id === order.id)
           .map((update: any) => ({
             ...update,
-            location: update.location ? [update.location.x, update.location.y] as [number, number] : [0, 0]
+            location: update.location 
+              ? [parseFloat(update.location.x), parseFloat(update.location.y)] as [number, number]
+              : [0, 0]
           }));
           
         formattedOrder.location_updates = orderLocationUpdates;
@@ -388,7 +393,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => clearInterval(interval);
   }, [state.orders]);
 
-  const value = {
+  const value: OrderContextType = {
     orders: state.orders,
     activeOrder: state.activeOrder,
     isLoading: state.isLoading,
@@ -397,7 +402,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addOrder: async (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        const dbOrder = { ...order };
+        const dbOrder: any = { ...order };
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
         }
@@ -421,12 +426,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         const formattedOrder: PurchaseOrder = {
           ...data!,
-          origin: data?.origin ? [data.origin.x, data.origin.y] as [number, number] : undefined,
+          status: data!.status as OrderStatus,
+          origin: data?.origin 
+            ? [parseFloat(data.origin.x), parseFloat(data.origin.y)] as [number, number]
+            : undefined,
           destination_coords: data?.destination_coords 
-            ? [data.destination_coords.x, data.destination_coords.y] as [number, number] 
+            ? [parseFloat(data.destination_coords.x), parseFloat(data.destination_coords.y)] as [number, number]
             : undefined,
           current_location: data?.current_location 
-            ? [data.current_location.x, data.current_location.y] as [number, number] 
+            ? [parseFloat(data.current_location.x), parseFloat(data.current_location.y)] as [number, number]
             : undefined,
           location_updates: [],
           journey_info: []
@@ -443,7 +451,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateOrder: async (id: string, order: Partial<PurchaseOrder>) => {
       try {
-        const dbOrder = { ...order };
+        const dbOrder: any = { ...order };
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
         }
@@ -457,12 +465,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         delete dbOrder.location_updates;
         delete dbOrder.journey_info;
         
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('purchase_orders')
           .update(dbOrder)
-          .eq('id', id)
-          .select()
-          .single();
+          .eq('id', id);
           
         if (error) throw error;
         

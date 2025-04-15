@@ -355,7 +355,7 @@ const OrderDetailsPage: React.FC = () => {
                       <ul className="space-y-2">
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Product Type:</span>
-                          <span>{order.productType}</span>
+                          <span>{order.product_type}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Quantity:</span>
@@ -363,11 +363,11 @@ const OrderDetailsPage: React.FC = () => {
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Price Per Litre:</span>
-                          <span>{order.pricePerLitre}</span>
+                          <span>{order.price_per_litre}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Total Amount:</span>
-                          <span className="font-medium">{order.totalAmount}</span>
+                          <span className="font-medium">{order.total_amount}</span>
                         </li>
                       </ul>
                     </div>
@@ -377,7 +377,7 @@ const OrderDetailsPage: React.FC = () => {
                       <ul className="space-y-2">
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Loading Location:</span>
-                          <span>{order.loadingLocation}</span>
+                          <span>{order.loading_location}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Destination:</span>
@@ -385,7 +385,7 @@ const OrderDetailsPage: React.FC = () => {
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Expected Loading Date:</span>
-                          <span>{order.expectedLoadingDate}</span>
+                          <span>{order.expected_loading_date}</span>
                         </li>
                       </ul>
                     </div>
@@ -399,23 +399,23 @@ const OrderDetailsPage: React.FC = () => {
                       <ul className="space-y-2">
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Payment Reference:</span>
-                          <span>{order.paymentReference}</span>
+                          <span>{order.payment_reference}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Bank Name:</span>
-                          <span>{order.bankName}</span>
+                          <span>{order.bank_name}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Payment Date:</span>
-                          <span>{order.paymentDate}</span>
+                          <span>{order.payment_date}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Amount Paid:</span>
-                          <span>{order.amountPaid}</span>
+                          <span>{order.amount_paid}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Payment Type:</span>
-                          <span>{order.paymentType}</span>
+                          <span>{order.payment_type}</span>
                         </li>
                       </ul>
                     </div>
@@ -425,15 +425,15 @@ const OrderDetailsPage: React.FC = () => {
                       <ul className="space-y-2">
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Authorized By:</span>
-                          <span>{order.authorizedBy}</span>
+                          <span>{order.authorized_by}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Position:</span>
-                          <span>{order.authorizedPosition}</span>
+                          <span>{order.authorized_position}</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-muted-foreground">Company:</span>
-                          <span>{order.authorizedCompany}</span>
+                          <span>{order.authorized_company}</span>
                         </li>
                       </ul>
                     </div>
@@ -466,28 +466,28 @@ const OrderDetailsPage: React.FC = () => {
                     </>
                   )}
                   
-                  {(order.volumeAtDelivery || order.deliveryDate) && (
+                  {(order.volume_at_delivery || order.delivery_date) && (
                     <>
                       <Separator />
                       <div>
                         <h3 className="font-medium mb-4">Delivery Results</h3>
                         <ul className="space-y-2">
-                          {order.volumeAtLoading && (
+                          {order.volume_at_loading && (
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Volume at Loading:</span>
-                              <span>{order.volumeAtLoading} litres</span>
+                              <span>{order.volume_at_loading} litres</span>
                             </li>
                           )}
-                          {order.volumeAtDelivery && (
+                          {order.volume_at_delivery && (
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Volume at Delivery:</span>
-                              <span>{order.volumeAtDelivery} litres</span>
+                              <span>{order.volume_at_delivery} litres</span>
                             </li>
                           )}
-                          {order.deliveryDate && (
+                          {order.delivery_date && (
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Delivery Date:</span>
-                              <span>{order.deliveryDate}</span>
+                              <span>{order.delivery_date}</span>
                             </li>
                           )}
                         </ul>

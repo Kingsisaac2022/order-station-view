@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -21,18 +20,18 @@ const TrackOrderPage: React.FC = () => {
   const order = orders.find(o => o.id === id);
   
   // Get assigned driver and truck details
-  const assignedDriver = order?.driverId ? drivers.find(d => d.id === order.driverId) : undefined;
-  const assignedTruck = order?.assignedTruckId ? trucks.find(t => t.id === order.assignedTruckId) : undefined;
+  const assignedDriver = order?.driver_id ? drivers.find(d => d.id === order.driver_id) : undefined;
+  const assignedTruck = order?.assigned_truck_id ? trucks.find(t => t.id === order.assigned_truck_id) : undefined;
   
   // Set active order and calculate progress
   useEffect(() => {
     if (order) {
       setActiveOrder(order);
       
-      if (order.status === 'in-transit' && order.origin && order.destinationCoords && order.currentLocation) {
+      if (order.status === 'in-transit' && order.origin && order.destination_coords && order.current_location) {
         const [startLng, startLat] = order.origin;
-        const [endLng, endLat] = order.destinationCoords;
-        const [currentLng, currentLat] = order.currentLocation;
+        const [endLng, endLat] = order.destination_coords;
+        const [currentLng, currentLat] = order.current_location;
         
         // Calculate total distance of route
         const totalDistLng = endLng - startLng;
@@ -101,7 +100,7 @@ const TrackOrderPage: React.FC = () => {
   
   // Estimate arrival time
   const estimateArrivalTime = () => {
-    if (!order.origin || !order.destinationCoords || !order.currentLocation) {
+    if (!order.origin || !order.destination_coords || !order.current_location) {
       return 'Unknown';
     }
     
@@ -134,7 +133,7 @@ const TrackOrderPage: React.FC = () => {
               Back to Order
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Track Order: {order.poNumber}</h1>
+              <h1 className="text-2xl font-bold">Track Order: {order.po_number}</h1>
               <div className="flex items-center mt-1">
                 <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/50">
                   In Transit
@@ -152,10 +151,8 @@ const TrackOrderPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Map and route visualization */}
             <Card className="bg-dark-lighter border-border/20 overflow-hidden">
               <div className="p-4 bg-[#1A2033] h-[300px] relative">
-                {/* This would be a real map in production */}
                 <div className="h-full w-full flex flex-col items-center justify-center">
                   <Route size={48} className="mb-2 text-yellow-400" />
                   <p className="text-sm text-muted-foreground">
@@ -163,14 +160,12 @@ const TrackOrderPage: React.FC = () => {
                   </p>
                 </div>
                 
-                {/* Truck icon showing current position */}
                 <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <div className="bg-yellow-500 rounded-full p-2 animate-pulse">
                     <Truck size={24} className="text-black" />
                   </div>
                 </div>
                 
-                {/* Origin marker */}
                 <div className="absolute left-[20%] bottom-[30%] flex flex-col items-center">
                   <MapPin size={20} className="text-green-500" />
                   <div className="text-xs bg-dark bg-opacity-75 px-2 py-1 rounded mt-1">
@@ -178,7 +173,6 @@ const TrackOrderPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Destination marker */}
                 <div className="absolute right-[20%] bottom-[30%] flex flex-col items-center">
                   <MapPin size={20} className="text-red-500" />
                   <div className="text-xs bg-dark bg-opacity-75 px-2 py-1 rounded mt-1">
@@ -186,11 +180,9 @@ const TrackOrderPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Route line */}
                 <div className="absolute left-[20%] right-[20%] bottom-[30%] h-[3px] bg-gradient-to-r from-green-500 to-red-500"></div>
               </div>
               
-              {/* Progress bar */}
               <div className="p-4 border-t border-border/20">
                 <div className="flex justify-between items-center mb-1">
                   <div className="text-sm font-medium">Journey Progress</div>
@@ -205,7 +197,7 @@ const TrackOrderPage: React.FC = () => {
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <div>
                     <span className="text-green-500 mr-1">●</span>
-                    {order.loadingLocation}
+                    {order.loading_location}
                   </div>
                   <div>
                     <span className="text-red-500 mr-1">●</span>
@@ -215,7 +207,6 @@ const TrackOrderPage: React.FC = () => {
               </div>
             </Card>
             
-            {/* Journey info */}
             <Card className="bg-dark-lighter border-border/20">
               <div className="p-4 border-b border-border/20">
                 <h2 className="text-lg font-medium">Journey Details</h2>
@@ -258,7 +249,7 @@ const TrackOrderPage: React.FC = () => {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Departure</span>
-                        <span>{order.loadingLocation}</span>
+                        <span>{order.loading_location}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Destination</span>
@@ -266,7 +257,7 @@ const TrackOrderPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Expected Loading Date</span>
-                        <span>{order.expectedLoadingDate}</span>
+                        <span>{order.expected_loading_date}</span>
                       </div>
                     </div>
                   </div>
@@ -274,15 +265,14 @@ const TrackOrderPage: React.FC = () => {
               </div>
             </Card>
             
-            {/* Journey updates feed */}
             <Card className="bg-dark-lighter border-border/20">
               <div className="p-4 border-b border-border/20">
                 <h2 className="text-lg font-medium">Journey Updates</h2>
               </div>
               <div className="p-4">
-                {order.journeyInfo && order.journeyInfo.length > 0 ? (
+                {order.journey_info && order.journey_info.length > 0 ? (
                   <div className="space-y-4">
-                    {[...order.journeyInfo]
+                    {[...order.journey_info]
                       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                       .map((info, idx) => (
                         <div 
@@ -311,7 +301,6 @@ const TrackOrderPage: React.FC = () => {
           </div>
           
           <div className="space-y-6">
-            {/* Driver & truck info */}
             <Card className="bg-dark-lighter border-border/20">
               <div className="p-4 border-b border-border/20">
                 <h2 className="text-lg font-medium">Transport Details</h2>
@@ -322,8 +311,8 @@ const TrackOrderPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="text-sm text-muted-foreground">Driver</div>
                       <div className="font-medium">{assignedDriver.name}</div>
-                      <div className="text-sm">License: {assignedDriver.licenseNo}</div>
-                      <div className="text-sm">Contact: {assignedDriver.phoneNumber}</div>
+                      <div className="text-sm">License: {assignedDriver.license_no}</div>
+                      <div className="text-sm">Contact: {assignedDriver.phone_number}</div>
                     </div>
                   )}
                   
@@ -334,7 +323,7 @@ const TrackOrderPage: React.FC = () => {
                         <div className="text-sm text-muted-foreground">Vehicle</div>
                         <div className="font-medium flex items-center">
                           <Truck size={16} className="mr-2" />
-                          {assignedTruck.plateNo}
+                          {assignedTruck.plate_no}
                         </div>
                         <div className="text-sm">Model: {assignedTruck.model}</div>
                         <div className="text-sm">Capacity: {assignedTruck.capacity}</div>
@@ -342,7 +331,7 @@ const TrackOrderPage: React.FC = () => {
                           <Badge className="bg-green-500/20 text-green-500 border-green-500/50 mr-2">
                             GPS Enabled
                           </Badge>
-                          ID: {assignedTruck.gpsId}
+                          ID: {assignedTruck.gps_id}
                         </div>
                       </div>
                     </>
@@ -351,7 +340,6 @@ const TrackOrderPage: React.FC = () => {
               </div>
             </Card>
             
-            {/* Product details */}
             <Card className="bg-dark-lighter border-border/20">
               <div className="p-4 border-b border-border/20">
                 <h2 className="text-lg font-medium">Delivery Details</h2>
@@ -360,7 +348,7 @@ const TrackOrderPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">Product Type</div>
-                    <div className="font-medium">{order.productType}</div>
+                    <div className="font-medium">{order.product_type}</div>
                   </div>
                   
                   <div className="space-y-1">
