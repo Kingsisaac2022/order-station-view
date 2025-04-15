@@ -9,7 +9,311 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      drivers: {
+        Row: {
+          assigned_truck_id: string | null
+          created_at: string
+          email: string
+          id: string
+          last_trip: string | null
+          license_no: string
+          name: string
+          notes: string | null
+          phone_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_truck_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          last_trip?: string | null
+          license_no: string
+          name: string
+          notes?: string | null
+          phone_number: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_truck_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          last_trip?: string | null
+          license_no?: string
+          name?: string
+          notes?: string | null
+          phone_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_driver_truck"
+            columns: ["assigned_truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_info: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          purchase_order_id: string
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          purchase_order_id: string
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          purchase_order_id?: string
+          timestamp?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_info_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_updates: {
+        Row: {
+          created_at: string
+          id: string
+          location: unknown
+          purchase_order_id: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location: unknown
+          purchase_order_id: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: unknown
+          purchase_order_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_updates_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          amount_paid: string
+          assigned_truck_id: string | null
+          authorized_by: string
+          authorized_company: string
+          authorized_position: string
+          bank_name: string
+          created_at: string
+          current_location: unknown | null
+          date: string
+          delivery_date: string | null
+          depot_location: string
+          depot_manager: string
+          destination: string
+          destination_coords: unknown | null
+          driver_id: string | null
+          expected_loading_date: string
+          id: string
+          loading_location: string
+          notes: string | null
+          origin: unknown | null
+          payment_date: string
+          payment_reference: string
+          payment_type: string
+          po_number: string
+          price_per_litre: string
+          product_type: string
+          quantity: string
+          status: string
+          total_amount: string
+          transport_company: string | null
+          truck_plate_number: string | null
+          updated_at: string
+          volume_at_delivery: string | null
+          volume_at_loading: string | null
+        }
+        Insert: {
+          amount_paid: string
+          assigned_truck_id?: string | null
+          authorized_by: string
+          authorized_company: string
+          authorized_position: string
+          bank_name: string
+          created_at?: string
+          current_location?: unknown | null
+          date: string
+          delivery_date?: string | null
+          depot_location: string
+          depot_manager: string
+          destination: string
+          destination_coords?: unknown | null
+          driver_id?: string | null
+          expected_loading_date: string
+          id?: string
+          loading_location: string
+          notes?: string | null
+          origin?: unknown | null
+          payment_date: string
+          payment_reference: string
+          payment_type: string
+          po_number: string
+          price_per_litre: string
+          product_type: string
+          quantity: string
+          status: string
+          total_amount: string
+          transport_company?: string | null
+          truck_plate_number?: string | null
+          updated_at?: string
+          volume_at_delivery?: string | null
+          volume_at_loading?: string | null
+        }
+        Update: {
+          amount_paid?: string
+          assigned_truck_id?: string | null
+          authorized_by?: string
+          authorized_company?: string
+          authorized_position?: string
+          bank_name?: string
+          created_at?: string
+          current_location?: unknown | null
+          date?: string
+          delivery_date?: string | null
+          depot_location?: string
+          depot_manager?: string
+          destination?: string
+          destination_coords?: unknown | null
+          driver_id?: string | null
+          expected_loading_date?: string
+          id?: string
+          loading_location?: string
+          notes?: string | null
+          origin?: unknown | null
+          payment_date?: string
+          payment_reference?: string
+          payment_type?: string
+          po_number?: string
+          price_per_litre?: string
+          product_type?: string
+          quantity?: string
+          status?: string
+          total_amount?: string
+          transport_company?: string | null
+          truck_plate_number?: string | null
+          updated_at?: string
+          volume_at_delivery?: string | null
+          volume_at_loading?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_order_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_order_truck"
+            columns: ["assigned_truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trucks: {
+        Row: {
+          assigned_driver_id: string | null
+          capacity: string
+          created_at: string
+          current_location: unknown | null
+          fuel_capacity: string
+          fuel_level: number | null
+          gps_enabled: boolean
+          gps_id: string | null
+          id: string
+          last_maintenance: string | null
+          model: string
+          notes: string | null
+          plate_no: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          capacity: string
+          created_at?: string
+          current_location?: unknown | null
+          fuel_capacity: string
+          fuel_level?: number | null
+          gps_enabled?: boolean
+          gps_id?: string | null
+          id?: string
+          last_maintenance?: string | null
+          model: string
+          notes?: string | null
+          plate_no: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          capacity?: string
+          created_at?: string
+          current_location?: unknown | null
+          fuel_capacity?: string
+          fuel_level?: number | null
+          gps_enabled?: boolean
+          gps_id?: string | null
+          id?: string
+          last_maintenance?: string | null
+          model?: string
+          notes?: string | null
+          plate_no?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_truck_driver"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
