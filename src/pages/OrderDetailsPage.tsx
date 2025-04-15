@@ -133,7 +133,7 @@ const OrderDetailsPage: React.FC = () => {
                           {availableDrivers.length > 0 ? (
                             availableDrivers.map(driver => (
                               <SelectItem key={driver.id} value={driver.id}>
-                                {driver.name} - License: {driver.licenseNo}
+                                {driver.name} - License: {driver.license_no}
                               </SelectItem>
                             ))
                           ) : (

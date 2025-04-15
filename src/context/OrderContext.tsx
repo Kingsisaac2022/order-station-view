@@ -296,18 +296,24 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (journeyError) throw journeyError;
 
       const formattedOrders = orders.map((order: any) => {
+        const origin = order.origin ? 
+          [parseFloat((order.origin as any).x), parseFloat((order.origin as any).y)] as [number, number] : 
+          undefined;
+          
+        const destination_coords = order.destination_coords ? 
+          [parseFloat((order.destination_coords as any).x), parseFloat((order.destination_coords as any).y)] as [number, number] : 
+          undefined;
+          
+        const current_location = order.current_location ? 
+          [parseFloat((order.current_location as any).x), parseFloat((order.current_location as any).y)] as [number, number] : 
+          undefined;
+
         const formattedOrder: PurchaseOrder = {
           ...order,
           status: order.status as OrderStatus,
-          origin: order.origin 
-            ? [parseFloat(order.origin.x), parseFloat(order.origin.y)] as [number, number]
-            : undefined,
-          destination_coords: order.destination_coords 
-            ? [parseFloat(order.destination_coords.x), parseFloat(order.destination_coords.y)] as [number, number]
-            : undefined,
-          current_location: order.current_location 
-            ? [parseFloat(order.current_location.x), parseFloat(order.current_location.y)] as [number, number]
-            : undefined
+          origin,
+          destination_coords,
+          current_location
         };
         
         const orderLocationUpdates = locationUpdates
@@ -315,7 +321,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .map((update: any) => ({
             ...update,
             location: update.location 
-              ? [parseFloat(update.location.x), parseFloat(update.location.y)] as [number, number]
+              ? [parseFloat((update.location as any).x), parseFloat((update.location as any).y)] as [number, number]
               : [0, 0]
           }));
           
