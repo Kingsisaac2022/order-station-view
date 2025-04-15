@@ -27,26 +27,21 @@ const OrderDetailsPage: React.FC = () => {
   const [selectedTruck, setSelectedTruck] = useState('');
   const [deliveredVolume, setDeliveredVolume] = useState('');
   
-  // Find the current order
   const order = orders.find(o => o.id === id);
 
-  // Get available drivers and trucks
   const availableDrivers = drivers.filter(driver => driver.status === 'approved' && !driver.assigned_truck_id);
   const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assigned_driver_id && truck.gps_enabled);
 
-  // Set active order when component mounts
   useEffect(() => {
     if (order) {
       setActiveOrder(order);
     }
     
-    // Cleanup when leaving the page
     return () => {
       setActiveOrder(null);
     };
   }, [order, setActiveOrder]);
 
-  // Navigate back if order not found
   if (!order) {
     useEffect(() => {
       navigate('/');
@@ -71,7 +66,6 @@ const OrderDetailsPage: React.FC = () => {
     }
   };
 
-  // Order actions based on current status
   const renderActions = () => {
     switch (order.status) {
       case 'pending':
@@ -311,7 +305,6 @@ const OrderDetailsPage: React.FC = () => {
     }
   };
 
-  // Get assigned driver and truck details
   const assignedDriver = drivers.find(d => d.id === order?.driver_id);
   const assignedTruck = trucks.find(t => t.id === order?.assigned_truck_id);
 

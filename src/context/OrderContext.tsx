@@ -297,15 +297,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const formattedOrders = orders.map((order: any) => {
         const origin = order.origin ? 
-          [parseFloat((order.origin as any).x), parseFloat((order.origin as any).y)] as [number, number] : 
+          [parseFloat(((order.origin as any).x || 0)), parseFloat(((order.origin as any).y || 0))] as [number, number] : 
           undefined;
           
         const destination_coords = order.destination_coords ? 
-          [parseFloat((order.destination_coords as any).x), parseFloat((order.destination_coords as any).y)] as [number, number] : 
+          [parseFloat(((order.destination_coords as any).x || 0)), parseFloat(((order.destination_coords as any).y || 0))] as [number, number] : 
           undefined;
           
         const current_location = order.current_location ? 
-          [parseFloat((order.current_location as any).x), parseFloat((order.current_location as any).y)] as [number, number] : 
+          [parseFloat(((order.current_location as any).x || 0)), parseFloat(((order.current_location as any).y || 0))] as [number, number] : 
           undefined;
 
         const formattedOrder: PurchaseOrder = {
@@ -321,7 +321,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .map((update: any) => ({
             ...update,
             location: update.location 
-              ? [parseFloat((update.location as any).x), parseFloat((update.location as any).y)] as [number, number]
+              ? [parseFloat(((update.location as any).x || 0)), parseFloat(((update.location as any).y || 0))] as [number, number]
               : [0, 0]
           }));
           
