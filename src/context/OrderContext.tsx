@@ -453,13 +453,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...data!,
           status: data!.status as OrderStatus,
           origin: data?.origin 
-            ? [parseFloat(data.origin.x), parseFloat(data.origin.y)] as [number, number]
+            ? safeParseCoordinate(data.origin) as [number, number] | undefined
             : undefined,
           destination_coords: data?.destination_coords 
-            ? [parseFloat(data.destination_coords.x), parseFloat(data.destination_coords.y)] as [number, number]
+            ? safeParseCoordinate(data.destination_coords) as [number, number] | undefined
             : undefined,
           current_location: data?.current_location 
-            ? [parseFloat(data.current_location.x), parseFloat(data.current_location.y)] as [number, number]
+            ? safeParseCoordinate(data.current_location) as [number, number] | undefined
             : undefined,
           location_updates: [],
           journey_info: []
