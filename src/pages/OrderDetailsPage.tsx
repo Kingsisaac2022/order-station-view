@@ -152,7 +152,7 @@ const OrderDetailsPage: React.FC = () => {
                           {availableTrucks.length > 0 ? (
                             availableTrucks.map(truck => (
                               <SelectItem key={truck.id} value={truck.id}>
-                                {truck.plateNo} - {truck.capacity} - GPS Enabled
+                                {truck.plate_no} - {truck.capacity} - GPS Enabled
                               </SelectItem>
                             ))
                           ) : (
