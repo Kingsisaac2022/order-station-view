@@ -1,35 +1,12 @@
+
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from '@/types/orders';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-// Type guard function to check if an object has x and y properties
-function isPoint(obj: unknown): obj is { x: string | number; y: string | number } {
-  return obj !== null && 
-         typeof obj === 'object' && 
-         'x' in obj && 
-         'y' in obj;
-}
-
-// Safe parsing function for coordinates
-function safeParseCoordinate(obj: unknown): [number, number] | undefined {
-  if (!obj) return undefined;
-  
-  if (isPoint(obj)) {
-    const x = typeof obj.x === 'string' ? parseFloat(obj.x) : (typeof obj.x === 'number' ? obj.x : 0);
-    const y = typeof obj.y === 'string' ? parseFloat(obj.y) : (typeof obj.y === 'number' ? obj.y : 0);
-    return [x, y];
-  }
-  
-  return undefined;
-}
-
-interface OrderState {
-  orders: PurchaseOrder[];
-  activeOrder: PurchaseOrder | null;
-  isLoading: boolean;
-  error: string | null;
-}
+import { OrderContextType, OrderState } from '../types/order-context';
+import { orderReducer } from '../reducers/orderReducer';
+import { useOrderStatusNotifications } from '../hooks/useOrderStatusNotifications';
+import { safeParseCoordinate } from '../utils/coordinate-utils';
+import { PurchaseOrder } from '../types/orders';
 
 const initialState: OrderState = {
   orders: [],
@@ -38,270 +15,13 @@ const initialState: OrderState = {
   error: null
 };
 
-type OrderAction = 
-  | { type: 'SET_ORDERS'; payload: PurchaseOrder[] }
-  | { type: 'ADD_ORDER'; payload: PurchaseOrder }
-  | { type: 'UPDATE_ORDER'; payload: PurchaseOrder }
-  | { type: 'DELETE_ORDER'; payload: string }
-  | { type: 'SET_ACTIVE_ORDER'; payload: PurchaseOrder | null }
-  | { type: 'UPDATE_ORDER_STATUS'; payload: { id: string; status: OrderStatus; notes?: string } }
-  | { type: 'ASSIGN_DRIVER'; payload: { id: string; driverId: string; truckId: string } }
-  | { type: 'UPDATE_LOCATION'; payload: { id: string; location: [number, number]; timestamp: string } }
-  | { type: 'UPDATE_JOURNEY_INFO'; payload: { id: string; info: { type: string; message: string; timestamp: string } } }
-  | { type: 'COMPLETE_DELIVERY'; payload: { id: string; volumeDelivered: string } }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
-
-const orderReducer = (state: OrderState, action: OrderAction): OrderState => {
-  switch (action.type) {
-    case 'SET_ORDERS':
-      return {
-        ...state,
-        orders: action.payload,
-      };
-    case 'ADD_ORDER':
-      return {
-        ...state,
-        orders: [...state.orders, action.payload],
-      };
-    case 'UPDATE_ORDER':
-      return {
-        ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id ? action.payload : order
-        ),
-        activeOrder: state.activeOrder?.id === action.payload.id 
-          ? action.payload 
-          : state.activeOrder
-      };
-    case 'DELETE_ORDER':
-      return {
-        ...state,
-        orders: state.orders.filter(order => order.id !== action.payload),
-        activeOrder: state.activeOrder?.id === action.payload ? null : state.activeOrder
-      };
-    case 'SET_ACTIVE_ORDER':
-      return {
-        ...state,
-        activeOrder: action.payload,
-      };
-    case 'UPDATE_ORDER_STATUS':
-      return {
-        ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id 
-            ? { 
-                ...order, 
-                status: action.payload.status, 
-                notes: action.payload.notes || order.notes 
-              } 
-            : order
-        ),
-        activeOrder: state.activeOrder?.id === action.payload.id
-          ? { 
-              ...state.activeOrder, 
-              status: action.payload.status, 
-              notes: action.payload.notes || state.activeOrder.notes 
-            }
-          : state.activeOrder
-      };
-    case 'ASSIGN_DRIVER':
-      return {
-        ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id 
-            ? { 
-                ...order, 
-                driver_id: action.payload.driverId, 
-                assigned_truck_id: action.payload.truckId
-              } 
-            : order
-        ),
-        activeOrder: state.activeOrder?.id === action.payload.id
-          ? { 
-              ...state.activeOrder, 
-              driver_id: action.payload.driverId, 
-              assigned_truck_id: action.payload.truckId 
-            }
-          : state.activeOrder
-      };
-    case 'UPDATE_LOCATION':
-      return {
-        ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id 
-            ? { 
-                ...order, 
-                current_location: action.payload.location,
-                location_updates: [
-                  ...(order.location_updates || []),
-                  { 
-                    id: `temp-${Date.now()}`,
-                    purchase_order_id: order.id,
-                    location: action.payload.location,
-                    timestamp: action.payload.timestamp
-                  }
-                ] 
-              } 
-            : order
-        ),
-        activeOrder: state.activeOrder?.id === action.payload.id
-          ? { 
-              ...state.activeOrder,
-              current_location: action.payload.location,
-              location_updates: [
-                ...(state.activeOrder.location_updates || []),
-                { 
-                  id: `temp-${Date.now()}`,
-                  purchase_order_id: state.activeOrder.id,
-                  location: action.payload.location,
-                  timestamp: action.payload.timestamp
-                }
-              ]
-            }
-          : state.activeOrder
-      };
-    case 'UPDATE_JOURNEY_INFO':
-      return {
-        ...state,
-        orders: state.orders.map(order => 
-          order.id === action.payload.id 
-            ? { 
-                ...order, 
-                journey_info: [
-                  ...(order.journey_info || []),
-                  { 
-                    id: `temp-${Date.now()}`,
-                    purchase_order_id: order.id,
-                    ...action.payload.info 
-                  }
-                ] 
-              } 
-            : order
-        ),
-        activeOrder: state.activeOrder?.id === action.payload.id
-          ? { 
-              ...state.activeOrder,
-              journey_info: [
-                ...(state.activeOrder.journey_info || []),
-                { 
-                  id: `temp-${Date.now()}`,
-                  purchase_order_id: state.activeOrder.id,
-                  ...action.payload.info 
-                }
-              ]
-            }
-          : state.activeOrder
-      };
-    case 'COMPLETE_DELIVERY':
-      {
-        const order = state.orders.find(o => o.id === action.payload.id);
-        if (!order) return state;
-        
-        const volumeAtLoading = parseFloat(order.quantity.replace(/,/g, ''));
-        const volumeAtDelivery = parseFloat(action.payload.volumeDelivered.replace(/,/g, ''));
-        const difference = (volumeAtLoading - volumeAtDelivery) / volumeAtLoading * 100;
-        
-        const newStatus: OrderStatus = difference >= 3 ? 'flagged' : 'completed';
-        const notes = difference >= 3 
-          ? `Flagged: Volume difference of ${difference.toFixed(2)}% detected` 
-          : `Completed: Delivered volume matches expected (${difference.toFixed(2)}% difference)`;
-
-        const updatedOrder = { 
-          ...order, 
-          status: newStatus, 
-          volume_at_delivery: action.payload.volumeDelivered,
-          volume_at_loading: order.quantity,
-          delivery_date: new Date().toISOString().split('T')[0],
-          notes
-        };
-
-        return {
-          ...state,
-          orders: state.orders.map(o => o.id === action.payload.id ? updatedOrder : o),
-          activeOrder: state.activeOrder?.id === action.payload.id ? updatedOrder : state.activeOrder
-        };
-      }
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        error: action.payload
-      };
-    default:
-      return state;
-  }
-};
-
-interface OrderContextType {
-  orders: PurchaseOrder[];
-  activeOrder: PurchaseOrder | null;
-  isLoading: boolean;
-  error: string | null;
-  loadOrders: () => Promise<void>;
-  addOrder: (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateOrder: (id: string, order: Partial<PurchaseOrder>) => Promise<void>;
-  deleteOrder: (id: string) => Promise<void>;
-  setActiveOrder: (order: PurchaseOrder | null) => void;
-  updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => Promise<void>;
-  assignDriver: (id: string, driverId: string, truckId: string) => Promise<void>;
-  updateLocation: (id: string, location: [number, number]) => Promise<void>;
-  updateJourneyInfo: (id: string, type: string, message: string) => Promise<void>;
-  completeDelivery: (id: string, volumeDelivered: string) => Promise<void>;
-}
-
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
 
-  const getStatusNotification = (status: OrderStatus) => {
-    switch (status) {
-      case 'pending':
-        return 'Order created and pending payment verification';
-      case 'active':
-        return 'Payment verified, order is now active';
-      case 'in-transit':
-        return 'Order is in transit to destination';
-      case 'completed':
-        return 'Order has been successfully delivered';
-      case 'flagged':
-        return 'Order has been flagged due to volume discrepancy';
-      default:
-        return `Order status updated to ${status}`;
-    }
-  };
-
-  useEffect(() => {
-    const handleStatusChanges = () => {
-      const activeOrder = state.activeOrder;
-      if (!activeOrder) return;
-
-      switch (activeOrder.status) {
-        case 'pending':
-          toast.info(getStatusNotification('pending'));
-          break;
-        case 'active':
-          toast.success(getStatusNotification('active'));
-          break;
-        case 'in-transit':
-          toast.info(getStatusNotification('in-transit'));
-          break;
-        case 'completed':
-          toast.success(getStatusNotification('completed'));
-          break;
-        case 'flagged':
-          toast.error(getStatusNotification('flagged'));
-          break;
-      }
-    };
-
-    handleStatusChanges();
-  }, [state.activeOrder?.status]);
+  // Use the custom hook for status notifications
+  useOrderStatusNotifications(state.activeOrder);
 
   const loadOrders = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -325,13 +45,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (journeyError) throw journeyError;
 
       const formattedOrders = orders.map((order: any) => {
-        const origin = safeParseCoordinate(order.origin) as [number, number] | undefined;
-        const destination_coords = safeParseCoordinate(order.destination_coords) as [number, number] | undefined;
-        const current_location = safeParseCoordinate(order.current_location) as [number, number] | undefined;
+        const origin = safeParseCoordinate(order.origin);
+        const destination_coords = safeParseCoordinate(order.destination_coords);
+        const current_location = safeParseCoordinate(order.current_location);
 
         const formattedOrder: PurchaseOrder = {
           ...order,
-          status: order.status as OrderStatus,
           origin,
           destination_coords,
           current_location
@@ -345,7 +64,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }));
           
         formattedOrder.location_updates = orderLocationUpdates;
-        
         formattedOrder.journey_info = journeyInfo.filter((info: any) => 
           info.purchase_order_id === order.id
         );
@@ -355,7 +73,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       dispatch({ type: 'SET_ORDERS', payload: formattedOrders });
       dispatch({ type: 'SET_ERROR', payload: null });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading orders:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load orders' });
       toast.error('Failed to load orders');
@@ -364,10 +82,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Load orders on mount
   useEffect(() => {
     loadOrders();
   }, []);
 
+  // Handle in-transit orders simulation
   useEffect(() => {
     const inTransitOrders = state.orders.filter(order => order.status === 'in-transit');
     if (inTransitOrders.length === 0) return;
@@ -378,12 +98,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const [startLng, startLat] = order.origin;
         const [endLng, endLat] = order.destination_coords;
-        
         let [currentLng, currentLat] = order.current_location;
         
         const totalDistLng = endLng - startLng;
         const totalDistLat = endLat - startLat;
-        
         const remainingDistLng = endLng - currentLng;
         const remainingDistLat = endLat - currentLat;
         
@@ -424,7 +142,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isLoading: state.isLoading,
     error: state.error,
     loadOrders,
-    
     addOrder: async (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => {
       try {
         const dbOrder: any = { ...order };
@@ -451,15 +168,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         const formattedOrder: PurchaseOrder = {
           ...data!,
-          status: data!.status as OrderStatus,
           origin: data?.origin 
-            ? safeParseCoordinate(data.origin) as [number, number] | undefined
+            ? safeParseCoordinate(data.origin)
             : undefined,
           destination_coords: data?.destination_coords 
-            ? safeParseCoordinate(data.destination_coords) as [number, number] | undefined
+            ? safeParseCoordinate(data.destination_coords)
             : undefined,
           current_location: data?.current_location 
-            ? safeParseCoordinate(data.current_location) as [number, number] | undefined
+            ? safeParseCoordinate(data.current_location)
             : undefined,
           location_updates: [],
           journey_info: []
@@ -473,7 +189,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw error;
       }
     },
-    
     updateOrder: async (id: string, order: Partial<PurchaseOrder>) => {
       try {
         const dbOrder: any = { ...order };
@@ -498,14 +213,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (error) throw error;
         
         await loadOrders();
-        
         toast.success('Order updated successfully');
       } catch (error) {
         console.error('Error updating order:', error);
         toast.error('Failed to update order');
       }
     },
-    
     deleteOrder: async (id: string) => {
       try {
         const { error } = await supabase
@@ -522,11 +235,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toast.error('Failed to delete order');
       }
     },
-    
     setActiveOrder: (order: PurchaseOrder | null) => {
       dispatch({ type: 'SET_ACTIVE_ORDER', payload: order });
     },
-    
     updateOrderStatus: async (id: string, status: OrderStatus, notes?: string) => {
       try {
         const updates = { 
@@ -534,7 +245,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...(notes && { notes })
         };
         
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('purchase_orders')
           .update(updates)
           .eq('id', id)
@@ -554,10 +265,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toast.error('Failed to update order status');
       }
     },
-    
     assignDriver: async (id: string, driverId: string, truckId: string) => {
       try {
-        const { data: updatedOrder, error: orderError } = await supabase
+        const { error: orderError } = await supabase
           .from('purchase_orders')
           .update({ 
             driver_id: driverId, 
@@ -603,14 +313,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         
         await loadOrders();
-        
         toast.success('Driver and truck assigned to order');
       } catch (error) {
         console.error('Error assigning driver:', error);
         toast.error('Failed to assign driver');
       }
     },
-    
     updateLocation: async (id: string, location: [number, number]) => {
       try {
         const point = `(${location[0]},${location[1]})`;
@@ -642,7 +350,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Error updating location:', error);
       }
     },
-    
     updateJourneyInfo: async (id: string, type: string, message: string) => {
       try {
         const timestamp = new Date().toISOString();
@@ -669,7 +376,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Error updating journey info:', error);
       }
     },
-    
     completeDelivery: async (id: string, volumeDelivered: string) => {
       try {
         const currentOrder = state.orders.find(o => o.id === id);
@@ -737,7 +443,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         
         await loadOrders();
-        
         toast.success(`Delivery ${newStatus}`);
       } catch (error) {
         console.error('Error completing delivery:', error);
