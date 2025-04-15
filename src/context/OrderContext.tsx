@@ -280,32 +280,41 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data: orders, error: ordersError } = await supabase
         .from('purchase_orders')
         .select('*');
-        
+      
       if (ordersError) throw ordersError;
 
       const { data: locationUpdates, error: locError } = await supabase
         .from('location_updates')
         .select('*');
-        
+      
       if (locError) throw locError;
 
       const { data: journeyInfo, error: journeyError } = await supabase
         .from('journey_info')
         .select('*');
-        
+      
       if (journeyError) throw journeyError;
 
       const formattedOrders = orders.map((order: any) => {
         const origin = order.origin ? 
-          [parseFloat(((order.origin as any).x || 0)), parseFloat(((order.origin as any).y || 0))] as [number, number] : 
+          [
+            parseFloat(((order.origin as any)?.x || 0)), 
+            parseFloat(((order.origin as any)?.y || 0))
+          ] as [number, number] : 
           undefined;
-          
+        
         const destination_coords = order.destination_coords ? 
-          [parseFloat(((order.destination_coords as any).x || 0)), parseFloat(((order.destination_coords as any).y || 0))] as [number, number] : 
+          [
+            parseFloat(((order.destination_coords as any)?.x || 0)), 
+            parseFloat(((order.destination_coords as any)?.y || 0))
+          ] as [number, number] : 
           undefined;
-          
+        
         const current_location = order.current_location ? 
-          [parseFloat(((order.current_location as any).x || 0)), parseFloat(((order.current_location as any).y || 0))] as [number, number] : 
+          [
+            parseFloat(((order.current_location as any)?.x || 0)), 
+            parseFloat(((order.current_location as any)?.y || 0))
+          ] as [number, number] : 
           undefined;
 
         const formattedOrder: PurchaseOrder = {
@@ -321,7 +330,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .map((update: any) => ({
             ...update,
             location: update.location 
-              ? [parseFloat(((update.location as any).x || 0)), parseFloat(((update.location as any).y || 0))] as [number, number]
+              ? [
+                  parseFloat(((update.location as any)?.x || 0)), 
+                  parseFloat(((update.location as any)?.y || 0))
+                ] as [number, number]
               : [0, 0]
           }));
           
