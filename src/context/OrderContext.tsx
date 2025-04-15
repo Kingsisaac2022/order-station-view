@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from '@/types/orders';
 import { toast } from 'sonner';
@@ -231,7 +230,6 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
 
-  // Function to get status notification message
   const getStatusNotification = (status: OrderStatus) => {
     switch (status) {
       case 'pending':
@@ -249,13 +247,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Notify on order status changes
   useEffect(() => {
     const handleStatusChanges = () => {
       const activeOrder = state.activeOrder;
       if (!activeOrder) return;
 
-      // Show different notifications based on status
       switch (activeOrder.status) {
         case 'pending':
           toast.info(getStatusNotification('pending'));
@@ -278,35 +274,29 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     handleStatusChanges();
   }, [state.activeOrder?.status]);
 
-  // Load orders from database
   const loadOrders = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      // Fetch orders
       const { data: orders, error: ordersError } = await supabase
         .from('purchase_orders')
         .select('*');
         
       if (ordersError) throw ordersError;
 
-      // Fetch location updates for each order
       const { data: locationUpdates, error: locError } = await supabase
         .from('location_updates')
         .select('*');
         
       if (locError) throw locError;
 
-      // Fetch journey info for each order
       const { data: journeyInfo, error: journeyError } = await supabase
         .from('journey_info')
         .select('*');
         
       if (journeyError) throw journeyError;
 
-      // Convert points to arrays and merge data
-      const formattedOrders = orders.map(order => {
-        // Format locations from POINT to array format
-        const formattedOrder = {
+      const formattedOrders = orders.map((order: any) => {
+        const formattedOrder: PurchaseOrder = {
           ...order,
           origin: order.origin ? [order.origin.x, order.origin.y] as [number, number] : undefined,
           destination_coords: order.destination_coords 
@@ -317,18 +307,16 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             : undefined
         };
         
-        // Attach location updates
         const orderLocationUpdates = locationUpdates
-          .filter(update => update.purchase_order_id === order.id)
-          .map(update => ({
+          .filter((update: any) => update.purchase_order_id === order.id)
+          .map((update: any) => ({
             ...update,
             location: update.location ? [update.location.x, update.location.y] as [number, number] : [0, 0]
           }));
           
         formattedOrder.location_updates = orderLocationUpdates;
         
-        // Attach journey info
-        formattedOrder.journey_info = journeyInfo.filter(info => 
+        formattedOrder.journey_info = journeyInfo.filter((info: any) => 
           info.purchase_order_id === order.id
         );
         
@@ -346,48 +334,38 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Initial data load
   useEffect(() => {
     loadOrders();
   }, []);
 
-  // Update truck locations for in-transit orders
   useEffect(() => {
     const inTransitOrders = state.orders.filter(order => order.status === 'in-transit');
     if (inTransitOrders.length === 0) return;
 
-    // Set up interval for location updates
     const interval = setInterval(() => {
       inTransitOrders.forEach(order => {
         if (!order.origin || !order.destination_coords || !order.current_location) return;
 
-        // Calculate new position along the route
         const [startLng, startLat] = order.origin;
         const [endLng, endLat] = order.destination_coords;
         
-        // Get current position
         let [currentLng, currentLat] = order.current_location;
         
-        // Calculate direction and distance to move
         const totalDistLng = endLng - startLng;
         const totalDistLat = endLat - startLat;
         
-        // Move a small step toward destination (5% of remaining distance)
         const remainingDistLng = endLng - currentLng;
         const remainingDistLat = endLat - currentLat;
         
         const moveLng = remainingDistLng * 0.05;
         const moveLat = remainingDistLat * 0.05;
         
-        // Update position if not very close to destination
         if (Math.abs(remainingDistLng) > 0.001 || Math.abs(remainingDistLat) > 0.001) {
           const newLng = currentLng + moveLng;
           const newLat = currentLat + moveLat;
           
-          // Update location
-          updateLocation(order.id, [newLng, newLat]);
+          value.updateLocation(order.id, [newLng, newLat]);
           
-          // Add journey updates occasionally
           if (Math.random() > 0.85) {
             const updates = [
               { type: 'traffic', message: 'Light traffic conditions on route' },
@@ -401,7 +379,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ];
             
             const update = updates[Math.floor(Math.random() * updates.length)];
-            updateJourneyInfo(order.id, update.type, update.message);
+            value.updateJourneyInfo(order.id, update.type, update.message);
           }
         }
       });
@@ -410,7 +388,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => clearInterval(interval);
   }, [state.orders]);
 
-  // Context values
   const value = {
     orders: state.orders,
     activeOrder: state.activeOrder,
@@ -420,7 +397,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addOrder: async (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Convert location arrays to points if they exist
         const dbOrder = { ...order };
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
@@ -432,7 +408,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           dbOrder.current_location = `(${order.current_location[0]},${order.current_location[1]})`;
         }
         
-        // Remove related arrays that are stored in separate tables
         delete dbOrder.location_updates;
         delete dbOrder.journey_info;
         
@@ -444,14 +419,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (error) throw error;
         
-        // Format the new order with array coordinates
-        const formattedOrder = {
-          ...data,
-          origin: data.origin ? [data.origin.x, data.origin.y] as [number, number] : undefined,
-          destination_coords: data.destination_coords 
+        const formattedOrder: PurchaseOrder = {
+          ...data!,
+          origin: data?.origin ? [data.origin.x, data.origin.y] as [number, number] : undefined,
+          destination_coords: data?.destination_coords 
             ? [data.destination_coords.x, data.destination_coords.y] as [number, number] 
             : undefined,
-          current_location: data.current_location 
+          current_location: data?.current_location 
             ? [data.current_location.x, data.current_location.y] as [number, number] 
             : undefined,
           location_updates: [],
@@ -460,8 +434,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         dispatch({ type: 'ADD_ORDER', payload: formattedOrder });
         toast.success('Order created successfully');
-        
-        return formattedOrder;
       } catch (error) {
         console.error('Error creating order:', error);
         toast.error('Failed to create order');
@@ -471,7 +443,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateOrder: async (id: string, order: Partial<PurchaseOrder>) => {
       try {
-        // Convert location arrays to points if they exist
         const dbOrder = { ...order };
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
@@ -483,7 +454,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           dbOrder.current_location = `(${order.current_location[0]},${order.current_location[1]})`;
         }
         
-        // Remove related arrays that are stored in separate tables
         delete dbOrder.location_updates;
         delete dbOrder.journey_info;
         
@@ -496,8 +466,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (error) throw error;
         
-        // Need to re-fetch the related data
-        // For simplicity, we'll reload all orders
         await loadOrders();
         
         toast.success('Order updated successfully');
@@ -558,7 +526,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     assignDriver: async (id: string, driverId: string, truckId: string) => {
       try {
-        // Update order with driver and truck
         const { data: updatedOrder, error: orderError } = await supabase
           .from('purchase_orders')
           .update({ 
@@ -572,7 +539,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (orderError) throw orderError;
         
-        // Add journey info for this assignment
         const { error: journeyError } = await supabase
           .from('journey_info')
           .insert([{
@@ -584,7 +550,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (journeyError) throw journeyError;
         
-        // Update the driver status
         await supabase
           .from('drivers')
           .update({ 
@@ -593,7 +558,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           })
           .eq('id', driverId);
           
-        // Update the truck status
         await supabase
           .from('trucks')
           .update({ 
@@ -607,7 +571,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           payload: { id, driverId, truckId } 
         });
         
-        // Reload all data to ensure consistency
         await loadOrders();
         
         toast.success('Driver and truck assigned to order');
@@ -619,7 +582,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateLocation: async (id: string, location: [number, number]) => {
       try {
-        // Update order's current location
         const point = `(${location[0]},${location[1]})`;
         
         const { error: orderError } = await supabase
@@ -629,7 +591,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (orderError) throw orderError;
         
-        // Add to location history
         const timestamp = new Date().toISOString();
         
         const { error: locationError } = await supabase
@@ -648,7 +609,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       } catch (error) {
         console.error('Error updating location:', error);
-        // Don't show toast for location updates as they're frequent
       }
     },
     
@@ -681,7 +641,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     completeDelivery: async (id: string, volumeDelivered: string) => {
       try {
-        // First get the current order to calculate volume difference
         const currentOrder = state.orders.find(o => o.id === id);
         if (!currentOrder) {
           throw new Error('Order not found');
@@ -696,7 +655,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ? `Flagged: Volume difference of ${difference.toFixed(2)}% detected` 
           : `Completed: Delivered volume matches expected (${difference.toFixed(2)}% difference)`;
         
-        // Update the order
         const { error: orderError } = await supabase
           .from('purchase_orders')
           .update({
@@ -710,7 +668,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (orderError) throw orderError;
         
-        // Add journey info for completion
         const { error: journeyError } = await supabase
           .from('journey_info')
           .insert([{
@@ -722,7 +679,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
         if (journeyError) throw journeyError;
         
-        // If there's an assigned driver and truck, update their status
         if (currentOrder.driver_id) {
           await supabase
             .from('drivers')
@@ -749,7 +705,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           payload: { id, volumeDelivered } 
         });
         
-        // Reload all data to ensure consistency
         await loadOrders();
         
         toast.success(`Delivery ${newStatus}`);

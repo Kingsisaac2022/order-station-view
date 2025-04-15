@@ -49,7 +49,7 @@ const Trucks: React.FC = () => {
   };
   
   const handleAdd = () => {
-    const newTruck = {
+    const newTruck: Partial<Truck> = {
       plate_no,
       model,
       capacity,
@@ -70,7 +70,7 @@ const Trucks: React.FC = () => {
       newTruck.current_location = [lng, lat];
     }
     
-    addTruck(newTruck);
+    addTruck(newTruck as Truck);
     setIsAddDialogOpen(false);
     resetForm();
   };
@@ -78,7 +78,7 @@ const Trucks: React.FC = () => {
   const handleEdit = () => {
     if (!currentTruck) return;
     
-    const updatedTruck = {
+    const updatedTruck: Partial<Truck> = {
       id: currentTruck.id,
       plate_no,
       model,

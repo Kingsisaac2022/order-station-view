@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,8 +31,8 @@ const OrderDetailsPage: React.FC = () => {
   const order = orders.find(o => o.id === id);
 
   // Get available drivers and trucks
-  const availableDrivers = drivers.filter(driver => driver.status === 'approved' && !driver.assignedTruckId);
-  const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assignedDriverId && truck.gpsEnabled);
+  const availableDrivers = drivers.filter(driver => driver.status === 'approved' && !driver.assigned_truck_id);
+  const availableTrucks = trucks.filter(truck => truck.status === 'available' && !truck.assigned_driver_id && truck.gps_enabled);
 
   // Set active order when component mounts
   useEffect(() => {
@@ -313,8 +312,8 @@ const OrderDetailsPage: React.FC = () => {
   };
 
   // Get assigned driver and truck details
-  const assignedDriver = drivers.find(d => d.id === order.driverId);
-  const assignedTruck = trucks.find(t => t.id === order.assignedTruckId);
+  const assignedDriver = drivers.find(d => d.id === order?.driver_id);
+  const assignedTruck = trucks.find(t => t.id === order?.assigned_truck_id);
 
   return (
     <div className="min-h-screen bg-dark text-foreground py-10">
@@ -330,14 +329,14 @@ const OrderDetailsPage: React.FC = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold flex items-center">
-              Purchase Order: {order.poNumber}
+              Purchase Order: {order?.po_number}
             </h1>
             <div className="flex items-center mt-1">
-              <Badge className={`${getStatusColor(order.status)}`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              <Badge className={`${order ? getStatusColor(order.status) : ''}`}>
+                {order?.status.charAt(0).toUpperCase() + order?.status.slice(1)}
               </Badge>
               <span className="mx-2 text-sm text-muted-foreground">•</span>
-              <span className="text-sm text-muted-foreground">Created: {order.date}</span>
+              <span className="text-sm text-muted-foreground">Created: {order?.date}</span>
             </div>
           </div>
         </div>
@@ -450,7 +449,7 @@ const OrderDetailsPage: React.FC = () => {
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Assigned Driver:</span>
                               <span>
-                                {assignedDriver.name} ({assignedDriver.licenseNo})
+                                {assignedDriver.name} ({assignedDriver.license_no})
                               </span>
                             </li>
                           )}
@@ -458,7 +457,7 @@ const OrderDetailsPage: React.FC = () => {
                             <li className="flex justify-between">
                               <span className="text-muted-foreground">Assigned Truck:</span>
                               <span>
-                                {assignedTruck.plateNo} - {assignedTruck.capacity}
+                                {assignedTruck.plate_no} - {assignedTruck.capacity}
                               </span>
                             </li>
                           )}
