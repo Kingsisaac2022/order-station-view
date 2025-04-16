@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardPanel from '../DashboardPanel';
 import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle, CreditCard, User, Check, Truck as TruckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { OrderStatus } from '@/types/orders';
 import { Driver } from '@/types/drivers';
 import { Truck as TruckType } from '@/types/trucks';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getApprovedDrivers, getGpsEnabledTrucks } from '@/integrations/supabase/client';
 
 const Orders: React.FC = () => {
   const handleCreateOrder = () => {
@@ -31,23 +31,15 @@ const Orders: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trucks, setTrucks] = useState<TruckType[]>([]);
   
+  useEffect(() => {
+    loadDriversAndTrucks();
+  }, []);
+  
   const loadDriversAndTrucks = async () => {
     setIsLoading2(true);
     try {
-      const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('status', 'approved');
-        
-      if (driversError) throw driversError;
-      
-      const { data: trucksData, error: trucksError } = await supabase
-        .from('trucks')
-        .select('*')
-        .eq('status', 'available')
-        .eq('gps_enabled', true);
-        
-      if (trucksError) throw trucksError;
+      const driversData = await getApprovedDrivers();
+      const trucksData = await getGpsEnabledTrucks();
       
       setDrivers(driversData as Driver[]);
       setTrucks(trucksData as TruckType[]);
@@ -121,6 +113,8 @@ const Orders: React.FC = () => {
       setSelectedDriver('');
       setSelectedTruck('');
       toast.success('Driver and truck assigned successfully');
+      
+      await loadOrders();
     } catch (err) {
       console.error('Error assigning driver:', err);
       toast.error('Failed to assign driver and truck');

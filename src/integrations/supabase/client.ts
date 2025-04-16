@@ -13,21 +13,24 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Add helper functions for common queries
 export const getApprovedDrivers = async () => {
+  // Query for both 'approved' and 'available' status to ensure we get all possible drivers
   const { data, error } = await supabase
     .from('drivers')
     .select('*')
-    .eq('status', 'approved');
+    .or('status.eq.approved,status.eq.available');
     
   if (error) throw error;
   return data;
 };
 
 export const getGpsEnabledTrucks = async () => {
+  // Query for both 'available' and null assigned_driver_id to ensure we get all available trucks
   const { data, error } = await supabase
     .from('trucks')
     .select('*')
-    .eq('status', 'available')
-    .eq('gps_enabled', true);
+    .or('status.eq.available')
+    .eq('gps_enabled', true)
+    .is('assigned_driver_id', null);
     
   if (error) throw error;
   return data;
