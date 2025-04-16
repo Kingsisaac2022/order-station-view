@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useOrders } from '@/context/OrderContext';
-import { PurchaseOrder } from '@/types/orders';
+import { PurchaseOrder, OrderStatus } from '@/types/orders';
 
 const purchaseOrderSchema = z.object({
   poNumber: z.string().min(1, { message: "PO Number is required" }),
@@ -68,45 +68,49 @@ const CreatePurchaseOrder: React.FC = () => {
     },
   });
 
-  const onSubmit = (data: PurchaseOrderFormValues) => {
-    const newOrder: PurchaseOrder = {
-      id: Date.now().toString(),
-      po_number: data.poNumber,
-      date: data.date,
-      depot_manager: data.depotManager,
-      depot_location: data.depotLocation,
-      product_type: data.productType,
-      quantity: data.quantity,
-      price_per_litre: data.pricePerLitre,
-      total_amount: data.totalAmount,
-      loading_location: data.loadingLocation,
-      destination: data.destination,
-      expected_loading_date: data.expectedLoadingDate,
-      truck_plate_number: data.truckPlateNumber,
-      transport_company: data.transportCompany,
-      payment_reference: data.paymentReference,
-      bank_name: data.bankName,
-      payment_date: data.paymentDate,
-      amount_paid: data.amountPaid,
-      payment_type: data.paymentType,
-      authorized_by: data.authorizedBy,
-      authorized_position: data.authorizedPosition,
-      authorized_company: data.authorizedCompany,
-      status: 'pending',
-      origin: [3.3792, 6.4550],
-      destination_coords: [3.3886, 6.4281],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    addOrder(newOrder);
-    setActiveOrder(newOrder);
-    
-    toast.success('Purchase order created successfully!', {
-      description: 'Order is now pending payment verification.',
-    });
-    
-    navigate(`/order/${newOrder.id}`);
+  const onSubmit = async (data: PurchaseOrderFormValues) => {
+    try {
+      const newOrder: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'> = {
+        po_number: data.poNumber,
+        date: data.date,
+        depot_manager: data.depotManager,
+        depot_location: data.depotLocation,
+        product_type: data.productType,
+        quantity: data.quantity,
+        price_per_litre: data.pricePerLitre,
+        total_amount: data.totalAmount,
+        loading_location: data.loadingLocation,
+        destination: data.destination,
+        expected_loading_date: data.expectedLoadingDate,
+        truck_plate_number: data.truckPlateNumber,
+        transport_company: data.transportCompany,
+        payment_reference: data.paymentReference,
+        bank_name: data.bankName,
+        payment_date: data.paymentDate,
+        amount_paid: data.amountPaid,
+        payment_type: data.paymentType,
+        authorized_by: data.authorizedBy,
+        authorized_position: data.authorizedPosition,
+        authorized_company: data.authorizedCompany,
+        status: 'pending' as OrderStatus,
+        origin: [3.3792, 6.4550],
+        destination_coords: [3.3886, 6.4281],
+      };
+      
+      await addOrder(newOrder);
+      toast.success('Purchase order created successfully!', {
+        description: 'Order is now pending payment verification.',
+      });
+      
+      // Find the newly created order from the orders list
+      // and set it as active before navigating
+      navigate('/');
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast.error('Failed to create order', {
+        description: 'Please try again or contact support if the issue persists.',
+      });
+    }
   };
 
   const calculateTotal = () => {

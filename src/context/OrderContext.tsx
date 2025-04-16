@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +52,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...order,
           origin,
           destination_coords,
-          current_location
+          current_location,
+          status: order.status as OrderStatus // Explicitly cast the status to OrderStatus
         };
         
         const orderLocationUpdates = locationUpdates
@@ -144,7 +144,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadOrders,
     addOrder: async (order: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        const dbOrder: any = { ...order };
+        const dbOrder: any = { 
+          ...order,
+          status: order.status as OrderStatus // Ensure status is treated as OrderStatus
+        };
+        
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
         }
@@ -164,22 +168,29 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error when creating order:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error('No data returned from insert operation');
+        }
         
         const formattedOrder: PurchaseOrder = {
-          ...data!,
-          origin: data?.origin 
+          ...data,
+          origin: data.origin 
             ? safeParseCoordinate(data.origin)
             : undefined,
-          destination_coords: data?.destination_coords 
+          destination_coords: data.destination_coords 
             ? safeParseCoordinate(data.destination_coords)
             : undefined,
-          current_location: data?.current_location 
+          current_location: data.current_location 
             ? safeParseCoordinate(data.current_location)
             : undefined,
           location_updates: [],
           journey_info: [],
-          status: data!.status as OrderStatus, // Cast the string to OrderStatus
+          status: data.status as OrderStatus // Explicitly cast the status
         };
         
         dispatch({ type: 'ADD_ORDER', payload: formattedOrder });
@@ -193,6 +204,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateOrder: async (id: string, order: Partial<PurchaseOrder>) => {
       try {
         const dbOrder: any = { ...order };
+        
         if (order.origin) {
           dbOrder.origin = `(${order.origin[0]},${order.origin[1]})`;
         }
@@ -275,9 +287,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             assigned_truck_id: truckId,
             status: 'active' as OrderStatus  // Explicitly cast as OrderStatus
           })
-          .eq('id', id)
-          .select()
-          .single();
+          .eq('id', id);
           
         if (orderError) throw orderError;
         
