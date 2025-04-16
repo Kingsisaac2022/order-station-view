@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle, CreditCard, User, Check, Truck } from 'lucide-react';
+import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle, CreditCard, User, Check, TruckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { OrderStatus } from '@/types/orders';
 import { Driver } from '@/types/drivers';
-import { Truck } from '@/types/trucks';
+import { Truck as TruckType } from '@/types/trucks';
 import { supabase } from '@/integrations/supabase/client';
 
 const Orders: React.FC = () => {
@@ -32,7 +32,7 @@ const Orders: React.FC = () => {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isLoading2, setIsLoading2] = useState(false);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [trucks, setTrucks] = useState<TruckType[]>([]);
   
   // Load available drivers and trucks when needed
   const loadDriversAndTrucks = async () => {
@@ -52,8 +52,8 @@ const Orders: React.FC = () => {
         
       if (trucksError) throw trucksError;
       
-      setDrivers(driversData);
-      setTrucks(trucksData);
+      setDrivers(driversData as Driver[]);
+      setTrucks(trucksData as TruckType[]);
     } catch (err) {
       console.error('Error loading drivers and trucks:', err);
       toast.error('Failed to load drivers and trucks');
@@ -370,7 +370,7 @@ const Orders: React.FC = () => {
               disabled={!selectedDriver || !selectedTruck || isLoading2}
               className="flex items-center"
             >
-              <Truck className="mr-2" size={14} />
+              <TruckIcon className="mr-2" size={14} />
               Assign for Delivery
             </Button>
           </DialogFooter>
