@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle, CreditCard, User, Check, TruckIcon } from 'lucide-react';
+import { ShoppingCart, FileText, ExternalLink, RefreshCcw, AlertCircle, CreditCard, User, Check, Truck as TruckIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
@@ -17,10 +16,8 @@ import { Truck as TruckType } from '@/types/trucks';
 import { supabase } from '@/integrations/supabase/client';
 
 const Orders: React.FC = () => {
-  // We'll use window.location for navigation
   const handleCreateOrder = () => {
     window.location.href = '/create-purchase-order';
-    // Show toast notification when navigating
     toast.success('Navigating to Create Purchase Order page');
   };
   
@@ -34,26 +31,37 @@ const Orders: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [trucks, setTrucks] = useState<TruckType[]>([]);
   
-  // Load available drivers and trucks when needed
   const loadDriversAndTrucks = async () => {
     setIsLoading2(true);
     try {
       const { data: driversData, error: driversError } = await supabase
         .from('drivers')
         .select('*')
-        .eq('status', 'available');
+        .eq('status', 'approved');
         
       if (driversError) throw driversError;
       
       const { data: trucksData, error: trucksError } = await supabase
         .from('trucks')
         .select('*')
-        .eq('status', 'available');
+        .eq('status', 'available')
+        .eq('gps_enabled', true);
         
       if (trucksError) throw trucksError;
       
       setDrivers(driversData as Driver[]);
       setTrucks(trucksData as TruckType[]);
+      
+      console.log('Retrieved drivers:', driversData);
+      console.log('Retrieved trucks:', trucksData);
+      
+      if (driversData.length === 0) {
+        toast.warning('No approved drivers available');
+      }
+      
+      if (trucksData.length === 0) {
+        toast.warning('No GPS-enabled trucks available');
+      }
     } catch (err) {
       console.error('Error loading drivers and trucks:', err);
       toast.error('Failed to load drivers and trucks');
@@ -126,6 +134,8 @@ const Orders: React.FC = () => {
   
   const openAssignDialog = (id: string) => {
     setSelectedOrder(id);
+    setSelectedDriver('');
+    setSelectedTruck('');
     loadDriversAndTrucks();
     setIsDriverDialogOpen(true);
   };
@@ -258,7 +268,6 @@ const Orders: React.FC = () => {
         </div>
       </DashboardPanel>
       
-      {/* Payment Confirmation Dialog */}
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -280,13 +289,12 @@ const Orders: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Driver Assignment Dialog */}
       <Dialog open={isDriverDialogOpen} onOpenChange={setIsDriverDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Assign Driver & Truck</DialogTitle>
             <DialogDescription>
-              Select an available driver and truck for this delivery.
+              Select an approved driver and GPS-enabled truck for this delivery.
             </DialogDescription>
           </DialogHeader>
           
@@ -298,14 +306,14 @@ const Orders: React.FC = () => {
           ) : (
             <div className="space-y-4 my-4">
               <div className="space-y-2">
-                <Label htmlFor="driver">Select Driver</Label>
+                <Label htmlFor="driver">Select Approved Driver</Label>
                 <Select value={selectedDriver} onValueChange={setSelectedDriver}>
                   <SelectTrigger id="driver">
                     <SelectValue placeholder="Select driver" />
                   </SelectTrigger>
                   <SelectContent>
                     {drivers.length === 0 ? (
-                      <SelectItem value="none" disabled>No available drivers</SelectItem>
+                      <SelectItem value="none" disabled>No approved drivers</SelectItem>
                     ) : (
                       drivers.map(driver => (
                         <SelectItem key={driver.id} value={driver.id}>
@@ -322,24 +330,25 @@ const Orders: React.FC = () => {
                       <p><strong>Driver:</strong> {drivers.find(d => d.id === selectedDriver)?.name}</p>
                       <p><strong>License:</strong> {drivers.find(d => d.id === selectedDriver)?.license_no}</p>
                       <p><strong>Contact:</strong> {drivers.find(d => d.id === selectedDriver)?.phone_number}</p>
+                      <p><strong>Status:</strong> {drivers.find(d => d.id === selectedDriver)?.status}</p>
                     </CardContent>
                   </Card>
                 )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="truck">Select Truck</Label>
+                <Label htmlFor="truck">Select GPS-Enabled Truck</Label>
                 <Select value={selectedTruck} onValueChange={setSelectedTruck}>
                   <SelectTrigger id="truck">
                     <SelectValue placeholder="Select truck" />
                   </SelectTrigger>
                   <SelectContent>
                     {trucks.length === 0 ? (
-                      <SelectItem value="none" disabled>No available trucks</SelectItem>
+                      <SelectItem value="none" disabled>No GPS-enabled trucks</SelectItem>
                     ) : (
                       trucks.map(truck => (
                         <SelectItem key={truck.id} value={truck.id}>
-                          {truck.plate_no} ({truck.model})
+                          {truck.plate_no} ({truck.model}) {truck.gps_enabled ? '- GPS Enabled' : ''}
                         </SelectItem>
                       ))
                     )}
@@ -353,6 +362,7 @@ const Orders: React.FC = () => {
                       <p><strong>Model:</strong> {trucks.find(t => t.id === selectedTruck)?.model}</p>
                       <p><strong>Capacity:</strong> {trucks.find(t => t.id === selectedTruck)?.capacity}</p>
                       <p><strong>GPS:</strong> {trucks.find(t => t.id === selectedTruck)?.gps_enabled ? 'Enabled' : 'Disabled'}</p>
+                      <p><strong>GPS ID:</strong> {trucks.find(t => t.id === selectedTruck)?.gps_id || 'Not available'}</p>
                     </CardContent>
                   </Card>
                 )}
