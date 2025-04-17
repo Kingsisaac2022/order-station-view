@@ -152,7 +152,7 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Process truck data to ensure correct location format
       const processedTrucks = trucksData.map(truck => {
-        if (truck.current_location) {
+        if (truck && truck.current_location) {
           const locationArray = parsePointData(truck.current_location);
           return {
             ...truck,
@@ -256,7 +256,7 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (truck.current_location) {
           const [lng, lat] = truck.current_location;
           // Use the formatPointData helper for postgres point format
-          truckToInsert.current_location = formatPointData(lng, lat);
+          truckToInsert.current_location = formatPointData(lng, lat) as any;
         }
         
         const { data, error } = await supabase
@@ -291,7 +291,7 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Format location data if present
         if (truck.current_location) {
           const [lng, lat] = truck.current_location;
-          truckToUpdate.current_location = formatPointData(lng, lat);
+          truckToUpdate.current_location = formatPointData(lng, lat) as any;
         }
         
         const { data, error } = await supabase
@@ -328,7 +328,7 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const { data, error } = await supabase
           .from(TABLES.TRUCKS)
           .update({
-            current_location: formattedLocation,
+            current_location: formattedLocation as any,
             updated_at: new Date().toISOString()
           })
           .eq('id', id)

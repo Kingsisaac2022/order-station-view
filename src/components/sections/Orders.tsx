@@ -36,6 +36,12 @@ const Orders: React.FC = () => {
     loadDriversAndTrucks();
   }, []);
   
+  useEffect(() => {
+    if (isDriverDialogOpen) {
+      loadDriversAndTrucks();
+    }
+  }, [isDriverDialogOpen]);
+  
   const loadDriversAndTrucks = async () => {
     setIsLoading2(true);
     try {
