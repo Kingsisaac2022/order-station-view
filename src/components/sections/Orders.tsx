@@ -14,7 +14,6 @@ import { OrderStatus } from '@/types/orders';
 import { Driver } from '@/types/drivers';
 import { Truck as TruckType } from '@/types/trucks';
 import { supabase, getApprovedDrivers, getGpsEnabledTrucks } from '@/integrations/supabase/client';
-import { TABLES } from '@/integrations/supabase/schema';
 
 const Orders: React.FC = () => {
   const handleCreateOrder = () => {

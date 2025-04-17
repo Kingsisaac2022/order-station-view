@@ -16,7 +16,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export const getApprovedDrivers = async () => {
   // Query for both 'approved' and 'available' status to ensure we get all possible drivers
   const { data, error } = await supabase
-    .from(TABLES.DRIVERS)
+    .from('drivers')
     .select('*')
     .or('status.eq.approved,status.eq.available');
     
@@ -27,7 +27,7 @@ export const getApprovedDrivers = async () => {
 export const getGpsEnabledTrucks = async () => {
   // Query for both 'available' and null assigned_driver_id to ensure we get all available trucks
   const { data, error } = await supabase
-    .from(TABLES.TRUCKS)
+    .from('trucks')
     .select('*')
     .or('status.eq.available')
     .eq('gps_enabled', true)
@@ -62,3 +62,4 @@ export const parsePointData = (pointData: unknown): [number, number] | undefined
   
   return undefined;
 };
+

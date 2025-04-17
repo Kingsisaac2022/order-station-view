@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { Driver } from '@/types/drivers';
 import { Truck } from '@/types/trucks';
@@ -136,7 +135,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadFleetData = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      // Fixed: Using literal string for table name instead of variable
       const { data: driversData, error: driversError } = await supabase
         .from('drivers')
         .select('*')
@@ -144,7 +142,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (driversError) throw driversError;
       
-      // Fixed: Using literal string for table name instead of variable
       const { data: trucksData, error: trucksError } = await supabase
         .from('trucks')
         .select('*')
@@ -152,7 +149,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (trucksError) throw trucksError;
       
-      // Process truck data to ensure correct location format
       const processedTrucks = trucksData.map(truck => {
         if (truck && 'current_location' in truck && truck.current_location) {
           const locationArray = parsePointData(truck.current_location);
@@ -189,7 +185,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addDriver: async (driver: Omit<Driver, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Fixed: Using literal string for table name instead of variable
         const { data, error } = await supabase
           .from('drivers')
           .insert(driver)
@@ -211,7 +206,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateDriver: async (id: string, driver: Partial<Driver>) => {
       try {
-        // Fixed: Using literal string for table name instead of variable
         const { data, error } = await supabase
           .from('drivers')
           .update({ ...driver, updated_at: new Date().toISOString() })
@@ -234,7 +228,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     deleteDriver: async (id: string) => {
       try {
-        // Fixed: Using literal string for table name instead of variable
         const { error } = await supabase
           .from('drivers')
           .delete()
@@ -255,16 +248,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addTruck: async (truck: Omit<Truck, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Format location data if present
         const truckToInsert = { ...truck };
         
         if (truck.current_location) {
           const [lng, lat] = truck.current_location;
-          // Use the formatPointData helper for postgres point format
           truckToInsert.current_location = formatPointData(lng, lat) as any;
         }
         
-        // Fixed: Using literal string for table name instead of variable
         const { data, error } = await supabase
           .from('trucks')
           .insert(truckToInsert)
@@ -273,7 +263,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         if (error) throw error;
         
-        // Ensure the location is properly formatted in the returned data
         const processedTruck = {
           ...data,
           current_location: data.current_location ? parsePointData(data.current_location) : undefined
@@ -294,13 +283,11 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const truckToUpdate = { ...truck, updated_at: new Date().toISOString() };
         
-        // Format location data if present
         if (truck.current_location) {
           const [lng, lat] = truck.current_location;
           truckToUpdate.current_location = formatPointData(lng, lat) as any;
         }
         
-        // Fixed: Using literal string for table name instead of variable
         const { data, error } = await supabase
           .from('trucks')
           .update(truckToUpdate)
@@ -310,7 +297,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         if (error) throw error;
         
-        // Ensure the location is properly formatted in the returned data
         const processedTruck = {
           ...data,
           current_location: data.current_location ? parsePointData(data.current_location) : undefined
@@ -332,7 +318,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const [lng, lat] = location;
         const formattedLocation = formatPointData(lng, lat);
         
-        // Fixed: Using literal string for table name instead of variable
         const { data, error } = await supabase
           .from('trucks')
           .update({
@@ -356,7 +341,6 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     deleteTruck: async (id: string) => {
       try {
-        // Fixed: Using literal string for table name instead of variable
         const { error } = await supabase
           .from('trucks')
           .delete()
