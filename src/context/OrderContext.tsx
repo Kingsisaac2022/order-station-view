@@ -103,7 +103,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const totalDistLng = endLng - startLng;
         const totalDistLat = endLat - startLat;
         const remainingDistLng = endLng - currentLng;
-        const remainingDistLat = endEnd - currentLat;
+        const remainingDistLat = endLat - currentLat;
         
         const moveLng = remainingDistLng * 0.05;
         const moveLat = remainingDistLat * 0.05;
