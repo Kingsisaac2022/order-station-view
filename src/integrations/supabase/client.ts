@@ -36,3 +36,8 @@ export const getGpsEnabledTrucks = async () => {
   if (error) throw error;
   return data;
 };
+
+// Helper for formatting PostgreSQL point data
+export const formatPointData = (lng: number, lat: number): string => {
+  return `(${lng},${lat})`;
+};

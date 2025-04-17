@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { Driver } from '@/types/drivers';
 import { Truck } from '@/types/trucks';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, formatPointData } from '@/integrations/supabase/client';
 import { TABLES } from '@/integrations/supabase/schema';
 
 interface FleetState {
@@ -237,9 +238,18 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addTruck: async (truck: Omit<Truck, 'id' | 'created_at' | 'updated_at'>) => {
       try {
+        // Format location data if present
+        const truckToInsert = { ...truck };
+        
+        if (truck.current_location) {
+          const [lng, lat] = truck.current_location;
+          // Use the formatPointData helper for postgres point format
+          truckToInsert.current_location = formatPointData(lng, lat);
+        }
+        
         const { data, error } = await supabase
           .from(TABLES.TRUCKS)
-          .insert(truck)
+          .insert(truckToInsert)
           .select()
           .single();
         
@@ -258,9 +268,17 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateTruck: async (id: string, truck: Partial<Truck>) => {
       try {
+        const truckToUpdate = { ...truck, updated_at: new Date().toISOString() };
+        
+        // Format location data if present
+        if (truck.current_location) {
+          const [lng, lat] = truck.current_location;
+          truckToUpdate.current_location = formatPointData(lng, lat);
+        }
+        
         const { data, error } = await supabase
           .from(TABLES.TRUCKS)
-          .update({ ...truck, updated_at: new Date().toISOString() })
+          .update(truckToUpdate)
           .eq('id', id)
           .select()
           .single();
@@ -280,10 +298,12 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateTruckLocation: async (id: string, location: [number, number]) => {
       try {
+        const [lng, lat] = location;
+        
         const { data, error } = await supabase
           .from(TABLES.TRUCKS)
           .update({
-            current_location: `(${location[0]},${location[1]})`,
+            current_location: formatPointData(lng, lat),
             updated_at: new Date().toISOString()
           })
           .eq('id', id)

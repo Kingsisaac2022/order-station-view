@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import DashboardPanel from '../DashboardPanel';
 import { TruckIcon, Plus, Pencil, Trash2, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
@@ -67,12 +66,17 @@ const Trucks: React.FC = () => {
       // Nigeria approximate bounds: lat 4-14, lng 2-15
       const lat = 4 + Math.random() * 10; // between 4 and 14
       const lng = 2 + Math.random() * 13; // between 2 and 15
-      newTruck.current_location = [lng, lat];
+      newTruck.current_location = [lng, lat]; // Order matters: [longitude, latitude]
     }
     
-    addTruck(newTruck as Truck);
-    setIsAddDialogOpen(false);
-    resetForm();
+    addTruck(newTruck as Truck)
+      .then(() => {
+        setIsAddDialogOpen(false);
+        resetForm();
+      })
+      .catch(error => {
+        console.error('Error in add truck handler:', error);
+      });
   };
   
   const handleEdit = () => {
@@ -95,10 +99,10 @@ const Trucks: React.FC = () => {
       updatedTruck.gps_id = gps_id || currentTruck.gps_id || `GPS-${Date.now().toString().slice(-6)}`;
       
       // Generate location if newly GPS enabled and no location exists
-      if (!currentTruck.gps_enabled && !currentTruck.current_location) {
+      if (!currentTruck.gps_enabled || !currentTruck.current_location) {
         const lat = 4 + Math.random() * 10; // between 4 and 14
         const lng = 2 + Math.random() * 13; // between 2 and 15
-        updatedTruck.current_location = [lng, lat];
+        updatedTruck.current_location = [lng, lat]; // Order matters: [longitude, latitude]
       }
     } else {
       // Remove GPS data if disabled
@@ -106,9 +110,14 @@ const Trucks: React.FC = () => {
       updatedTruck.current_location = undefined;
     }
     
-    updateTruck(currentTruck.id, updatedTruck);
-    setIsEditDialogOpen(false);
-    resetForm();
+    updateTruck(currentTruck.id, updatedTruck)
+      .then(() => {
+        setIsEditDialogOpen(false);
+        resetForm();
+      })
+      .catch(error => {
+        console.error('Error in update truck handler:', error);
+      });
   };
   
   const handleDelete = () => {

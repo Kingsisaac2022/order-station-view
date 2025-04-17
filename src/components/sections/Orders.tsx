@@ -64,7 +64,8 @@ const Orders: React.FC = () => {
   
   const handleRefresh = async () => {
     await loadOrders();
-    toast.success('Orders refreshed');
+    await loadDriversAndTrucks();
+    toast.success('Data refreshed');
   };
   
   const getStatusColor = (status: string) => {
