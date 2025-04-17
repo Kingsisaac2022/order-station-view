@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, startDelivery } from '@/integrations/supabase/client';
 import { OrderContextType, OrderState } from '../types/order-context';
 import { orderReducer } from '../reducers/orderReducer';
 import { useOrderStatusNotifications } from '../hooks/useOrderStatusNotifications';
@@ -103,7 +103,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const totalDistLng = endLng - startLng;
         const totalDistLat = endLat - startLat;
         const remainingDistLng = endLng - currentLng;
-        const remainingDistLat = endLat - currentLat;
+        const remainingDistLat = endEnd - currentLat;
         
         const moveLng = remainingDistLng * 0.05;
         const moveLat = remainingDistLat * 0.05;
@@ -328,6 +328,57 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (error) {
         console.error('Error assigning driver:', error);
         toast.error('Failed to assign driver');
+      }
+    },
+    startDelivery: async (id: string) => {
+      try {
+        const currentOrder = state.orders.find(o => o.id === id);
+        if (!currentOrder) {
+          throw new Error('Order not found');
+        }
+        
+        // Define origin coordinates (depot location)
+        // For this example, we're using coordinates for Lagos, Nigeria
+        const originCoords: [number, number] = [3.3792, 6.5244];
+        
+        // Define destination coordinates (customer location)
+        // This is just an example - in a real app, you'd get this from geocoding the destination address
+        const destCoords: [number, number] = [3.9470, 7.3775]; // Some distance away
+        
+        // Start the delivery using our helper function
+        await startDelivery(id, originCoords, destCoords);
+        
+        // Update the journey info
+        await supabase
+          .from("journey_info")
+          .insert([{
+            purchase_order_id: id,
+            type: 'info',
+            message: 'Truck has departed from depot',
+            timestamp: new Date().toISOString()
+          }]);
+          
+        // Add this to update the driver's status to 'on-duty'
+        if (currentOrder.driver_id) {
+          await supabase
+            .from("drivers")
+            .update({ status: 'on-duty' })
+            .eq('id', currentOrder.driver_id);
+        }
+        
+        // Add this to update the truck's status to 'in-transit'
+        if (currentOrder.assigned_truck_id) {
+          await supabase
+            .from("trucks")
+            .update({ status: 'in-transit' })
+            .eq('id', currentOrder.assigned_truck_id);
+        }
+        
+        await loadOrders(); // Reload orders to get the updated data
+        toast.success('Delivery started successfully');
+      } catch (error) {
+        console.error('Error starting delivery:', error);
+        toast.error('Failed to start delivery');
       }
     },
     updateLocation: async (id: string, location: [number, number]) => {

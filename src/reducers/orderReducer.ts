@@ -1,4 +1,3 @@
-
 import { OrderState, OrderAction } from '../types/order-context';
 import { OrderStatus } from '../types/orders';
 
@@ -181,6 +180,18 @@ export const orderReducer = (state: OrderState, action: OrderAction): OrderState
       return {
         ...state,
         error: action.payload
+      };
+    case 'START_DELIVERY':
+      return {
+        ...state,
+        orders: state.orders.map(order => 
+          order.id === action.payload 
+            ? { ...order, status: 'in-transit' as OrderStatus } 
+            : order
+        ),
+        activeOrder: state.activeOrder?.id === action.payload
+          ? { ...state.activeOrder, status: 'in-transit' as OrderStatus }
+          : state.activeOrder
       };
     default:
       return state;

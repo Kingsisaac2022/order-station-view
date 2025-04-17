@@ -16,7 +16,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export const getApprovedDrivers = async () => {
   // Query for both 'approved' and 'available' status to ensure we get all possible drivers
   const { data, error } = await supabase
-    .from('drivers')
+    .from("drivers")
     .select('*')
     .or('status.eq.approved,status.eq.available');
     
@@ -27,7 +27,7 @@ export const getApprovedDrivers = async () => {
 export const getGpsEnabledTrucks = async () => {
   // Query for both 'available' and null assigned_driver_id to ensure we get all available trucks
   const { data, error } = await supabase
-    .from('trucks')
+    .from("trucks")
     .select('*')
     .or('status.eq.available')
     .eq('gps_enabled', true)
@@ -63,3 +63,36 @@ export const parsePointData = (pointData: unknown): [number, number] | undefined
   return undefined;
 };
 
+// New helper function for starting a delivery journey
+export const startDelivery = async (orderId: string, originCoords: [number, number], destinationCoords: [number, number]) => {
+  const formattedOrigin = formatPointData(originCoords[0], originCoords[1]);
+  const formattedDestination = formatPointData(destinationCoords[0], destinationCoords[1]);
+  
+  const { data, error } = await supabase
+    .from("purchase_orders")
+    .update({
+      status: 'in-transit',
+      origin: formattedOrigin, 
+      current_location: formattedOrigin, // Start at the origin
+      destination_coords: formattedDestination,
+    })
+    .eq('id', orderId)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  
+  // Add journey info entry about starting delivery
+  const { error: journeyError } = await supabase
+    .from("journey_info")
+    .insert({
+      purchase_order_id: orderId,
+      type: 'info',
+      message: 'Delivery journey started',
+      timestamp: new Date().toISOString()
+    });
+  
+  if (journeyError) throw journeyError;
+  
+  return data;
+};

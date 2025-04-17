@@ -1,5 +1,5 @@
 
-import { PurchaseOrder, OrderStatus, LocationUpdate, JourneyInfo } from './orders';
+import { PurchaseOrder, OrderStatus } from './orders';
 
 export interface OrderState {
   orders: PurchaseOrder[];
@@ -20,6 +20,7 @@ export interface OrderContextType {
   setActiveOrder: (order: PurchaseOrder | null) => void;
   updateOrderStatus: (id: string, status: OrderStatus, notes?: string) => Promise<void>;
   assignDriver: (id: string, driverId: string, truckId: string) => Promise<void>;
+  startDelivery: (id: string) => Promise<void>; // New function for starting delivery
   updateLocation: (id: string, location: [number, number]) => Promise<void>;
   updateJourneyInfo: (id: string, type: string, message: string) => Promise<void>;
   completeDelivery: (id: string, volumeDelivered: string) => Promise<void>;
@@ -37,4 +38,5 @@ export type OrderAction =
   | { type: 'UPDATE_JOURNEY_INFO'; payload: { id: string; info: { type: string; message: string; timestamp: string } } }
   | { type: 'COMPLETE_DELIVERY'; payload: { id: string; volumeDelivered: string } }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'START_DELIVERY'; payload: string }; // New action type for starting delivery
