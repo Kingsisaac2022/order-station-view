@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 import { useOrders } from '@/context/OrderContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { OrderStatus } from '@/types/orders';
 import { Driver } from '@/types/drivers';
 import { Truck as TruckType } from '@/types/trucks';
 import { supabase, getApprovedDrivers, getGpsEnabledTrucks } from '@/integrations/supabase/client';
+import { TABLES } from '@/integrations/supabase/schema';
 
 const Orders: React.FC = () => {
   const handleCreateOrder = () => {

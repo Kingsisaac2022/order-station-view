@@ -3,7 +3,7 @@ import React, { createContext, useContext, useReducer, useEffect, useState } fro
 import { Driver } from '@/types/drivers';
 import { Truck } from '@/types/trucks';
 import { toast } from 'sonner';
-import { supabase, formatPointData } from '@/integrations/supabase/client';
+import { supabase, formatPointData, parsePointData } from '@/integrations/supabase/client';
 import { TABLES } from '@/integrations/supabase/schema';
 
 interface FleetState {
@@ -150,8 +150,20 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (trucksError) throw trucksError;
       
+      // Process truck data to ensure correct location format
+      const processedTrucks = trucksData.map(truck => {
+        if (truck.current_location) {
+          const locationArray = parsePointData(truck.current_location);
+          return {
+            ...truck,
+            current_location: locationArray
+          };
+        }
+        return truck;
+      });
+      
       dispatch({ type: 'SET_DRIVERS', payload: driversData as Driver[] });
-      dispatch({ type: 'SET_TRUCKS', payload: trucksData as Truck[] });
+      dispatch({ type: 'SET_TRUCKS', payload: processedTrucks as Truck[] });
       dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       console.error('Error loading fleet data:', error);
@@ -255,7 +267,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         if (error) throw error;
         
-        dispatch({ type: 'ADD_TRUCK', payload: data as Truck });
+        // Ensure the location is properly formatted in the returned data
+        const processedTruck = {
+          ...data,
+          current_location: data.current_location ? parsePointData(data.current_location) : undefined
+        };
+        
+        dispatch({ type: 'ADD_TRUCK', payload: processedTruck as Truck });
         notifyAction('added', 'truck');
         
         return Promise.resolve();
@@ -285,7 +303,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         if (error) throw error;
         
-        dispatch({ type: 'UPDATE_TRUCK', payload: data as Truck });
+        // Ensure the location is properly formatted in the returned data
+        const processedTruck = {
+          ...data,
+          current_location: data.current_location ? parsePointData(data.current_location) : undefined
+        };
+        
+        dispatch({ type: 'UPDATE_TRUCK', payload: processedTruck as Truck });
         notifyAction('updated', 'truck');
         
         return Promise.resolve();
@@ -299,11 +323,12 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateTruckLocation: async (id: string, location: [number, number]) => {
       try {
         const [lng, lat] = location;
+        const formattedLocation = formatPointData(lng, lat);
         
         const { data, error } = await supabase
           .from(TABLES.TRUCKS)
           .update({
-            current_location: formatPointData(lng, lat),
+            current_location: formattedLocation,
             updated_at: new Date().toISOString()
           })
           .eq('id', id)

@@ -41,3 +41,24 @@ export const getGpsEnabledTrucks = async () => {
 export const formatPointData = (lng: number, lat: number): string => {
   return `(${lng},${lat})`;
 };
+
+// Helper for parsing point data from Postgres to [number, number] array
+export const parsePointData = (pointData: unknown): [number, number] | undefined => {
+  if (!pointData) return undefined;
+  
+  // If it's already in the correct format, return it
+  if (Array.isArray(pointData) && pointData.length === 2 && 
+      typeof pointData[0] === 'number' && typeof pointData[1] === 'number') {
+    return pointData as [number, number];
+  }
+  
+  // Handle PostgreSQL point object with x, y properties
+  if (pointData !== null && typeof pointData === 'object' && 'x' in pointData && 'y' in pointData) {
+    const point = pointData as {x: string|number, y: string|number};
+    const x = typeof point.x === 'string' ? parseFloat(point.x) : (typeof point.x === 'number' ? point.x : 0);
+    const y = typeof point.y === 'string' ? parseFloat(point.y) : (typeof point.y === 'number' ? point.y : 0);
+    return [x, y];
+  }
+  
+  return undefined;
+};
