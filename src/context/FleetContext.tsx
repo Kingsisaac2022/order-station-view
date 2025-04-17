@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { Driver } from '@/types/drivers';
 import { Truck } from '@/types/trucks';
@@ -125,7 +124,6 @@ const FleetContext = createContext<FleetContextType | undefined>(undefined);
 export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(fleetReducer, initialState);
 
-  // Notify on actions
   const notifyAction = (action: string, entityType: 'driver' | 'truck', success: boolean = true) => {
     if (success) {
       toast.success(`${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${action} successfully`);
@@ -134,72 +132,25 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Load data from Supabase
   const loadFleetData = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      // Tables need to be created in Supabase first
-      // We're simulating the database interaction for now
+      const { data: driversData, error: driversError } = await supabase
+        .from(TABLES.DRIVERS)
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      // Mock data
-      const mockDrivers: Driver[] = [
-        {
-          id: 'driver-1',
-          name: 'John Doe',
-          license_no: 'DL12345',
-          phone_number: '+2349012345678',
-          email: 'john@example.com',
-          status: 'available',
-          created_at: '2023-04-01',
-          updated_at: '2023-04-01'
-        },
-        {
-          id: 'driver-2',
-          name: 'Jane Smith',
-          license_no: 'DL67890',
-          phone_number: '+2349087654321',
-          email: 'jane@example.com',
-          status: 'on-duty',
-          assigned_truck_id: 'truck-1',
-          created_at: '2023-04-02',
-          updated_at: '2023-04-02'
-        }
-      ];
+      if (driversError) throw driversError;
       
-      const mockTrucks: Truck[] = [
-        {
-          id: 'truck-1',
-          plate_no: 'ABC-123-XYZ',
-          model: 'Volvo FH16',
-          capacity: '33,000 litres',
-          fuel_capacity: '200 litres',
-          assigned_driver_id: 'driver-2',
-          status: 'in-use',
-          gps_enabled: true,
-          gps_id: 'GPS-123456',
-          current_location: [3.3792, 6.5244], // Lagos coordinates
-          fuel_level: 85,
-          created_at: '2023-04-01',
-          updated_at: '2023-04-01'
-        },
-        {
-          id: 'truck-2',
-          plate_no: 'DEF-456-UVW',
-          model: 'Mercedes-Benz Actros',
-          capacity: '40,000 litres',
-          fuel_capacity: '250 litres',
-          status: 'available',
-          gps_enabled: true,
-          gps_id: 'GPS-654321',
-          current_location: [7.3986, 9.0765], // Abuja coordinates
-          fuel_level: 95,
-          created_at: '2023-04-02',
-          updated_at: '2023-04-02'
-        }
-      ];
-
-      dispatch({ type: 'SET_DRIVERS', payload: mockDrivers });
-      dispatch({ type: 'SET_TRUCKS', payload: mockTrucks });
+      const { data: trucksData, error: trucksError } = await supabase
+        .from(TABLES.TRUCKS)
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (trucksError) throw trucksError;
+      
+      dispatch({ type: 'SET_DRIVERS', payload: driversData as Driver[] });
+      dispatch({ type: 'SET_TRUCKS', payload: trucksData as Truck[] });
       dispatch({ type: 'SET_ERROR', payload: null });
     } catch (error) {
       console.error('Error loading fleet data:', error);
@@ -210,12 +161,10 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Initial data load
   useEffect(() => {
     loadFleetData();
   }, []);
 
-  // Context values
   const value = {
     drivers: state.drivers,
     trucks: state.trucks,
@@ -225,15 +174,15 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addDriver: async (driver: Omit<Driver, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Simulate API call
-        const newDriver: Driver = {
-          id: `driver-${Date.now()}`,
-          ...driver,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+        const { data, error } = await supabase
+          .from(TABLES.DRIVERS)
+          .insert(driver)
+          .select()
+          .single();
+          
+        if (error) throw error;
         
-        dispatch({ type: 'ADD_DRIVER', payload: newDriver });
+        dispatch({ type: 'ADD_DRIVER', payload: data as Driver });
         notifyAction('added', 'driver');
         
         return Promise.resolve();
@@ -246,20 +195,16 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateDriver: async (id: string, driver: Partial<Driver>) => {
       try {
-        // Find existing driver
-        const existingDriver = state.drivers.find(d => d.id === id);
-        if (!existingDriver) {
-          throw new Error('Driver not found');
-        }
+        const { data, error } = await supabase
+          .from(TABLES.DRIVERS)
+          .update({ ...driver, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single();
         
-        // Update driver
-        const updatedDriver: Driver = {
-          ...existingDriver,
-          ...driver,
-          updated_at: new Date().toISOString()
-        };
+        if (error) throw error;
         
-        dispatch({ type: 'UPDATE_DRIVER', payload: updatedDriver });
+        dispatch({ type: 'UPDATE_DRIVER', payload: data as Driver });
         notifyAction('updated', 'driver');
         
         return Promise.resolve();
@@ -272,7 +217,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     deleteDriver: async (id: string) => {
       try {
-        // Delete driver
+        const { error } = await supabase
+          .from(TABLES.DRIVERS)
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
         dispatch({ type: 'DELETE_DRIVER', payload: id });
         notifyAction('deleted', 'driver');
         
@@ -286,15 +237,15 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     addTruck: async (truck: Omit<Truck, 'id' | 'created_at' | 'updated_at'>) => {
       try {
-        // Simulate API call
-        const newTruck: Truck = {
-          id: `truck-${Date.now()}`,
-          ...truck,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+        const { data, error } = await supabase
+          .from(TABLES.TRUCKS)
+          .insert(truck)
+          .select()
+          .single();
         
-        dispatch({ type: 'ADD_TRUCK', payload: newTruck });
+        if (error) throw error;
+        
+        dispatch({ type: 'ADD_TRUCK', payload: data as Truck });
         notifyAction('added', 'truck');
         
         return Promise.resolve();
@@ -307,20 +258,16 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateTruck: async (id: string, truck: Partial<Truck>) => {
       try {
-        // Find existing truck
-        const existingTruck = state.trucks.find(t => t.id === id);
-        if (!existingTruck) {
-          throw new Error('Truck not found');
-        }
+        const { data, error } = await supabase
+          .from(TABLES.TRUCKS)
+          .update({ ...truck, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single();
         
-        // Update truck
-        const updatedTruck: Truck = {
-          ...existingTruck,
-          ...truck,
-          updated_at: new Date().toISOString()
-        };
+        if (error) throw error;
         
-        dispatch({ type: 'UPDATE_TRUCK', payload: updatedTruck });
+        dispatch({ type: 'UPDATE_TRUCK', payload: data as Truck });
         notifyAction('updated', 'truck');
         
         return Promise.resolve();
@@ -333,13 +280,18 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     updateTruckLocation: async (id: string, location: [number, number]) => {
       try {
-        // Find existing truck
-        const existingTruck = state.trucks.find(t => t.id === id);
-        if (!existingTruck) {
-          throw new Error('Truck not found');
-        }
+        const { data, error } = await supabase
+          .from(TABLES.TRUCKS)
+          .update({
+            current_location: `(${location[0]},${location[1]})`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .select()
+          .single();
         
-        // Update location
+        if (error) throw error;
+        
         dispatch({ type: 'UPDATE_TRUCK_LOCATION', payload: { id, location } });
         
         return Promise.resolve();
@@ -351,7 +303,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     deleteTruck: async (id: string) => {
       try {
-        // Delete truck
+        const { error } = await supabase
+          .from(TABLES.TRUCKS)
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
         dispatch({ type: 'DELETE_TRUCK', payload: id });
         notifyAction('deleted', 'truck');
         
@@ -365,13 +323,13 @@ export const FleetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     getAvailableDrivers: () => {
       return state.drivers.filter(driver => 
-        driver.status === 'approved' && !driver.assigned_truck_id
+        (driver.status === 'approved' || driver.status === 'available') && !driver.assigned_truck_id
       );
     },
     
     getAvailableTrucks: () => {
       return state.trucks.filter(truck => 
-        truck.status === 'available' && !truck.assigned_driver_id
+        truck.status === 'available' && truck.gps_enabled && !truck.assigned_driver_id
       );
     }
   };
