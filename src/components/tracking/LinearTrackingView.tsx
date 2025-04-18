@@ -66,6 +66,8 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
         return <CloudRain size={16} className="text-blue-500" />;
       case 'stop':
         return <Clock size={16} className="text-red-500" />;
+      case 'assignment':
+        return <Info size={16} className="text-green-500" />;
       default:
         return <Info size={16} className="text-yellow-500" />;
     }
@@ -116,7 +118,7 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
                 transition: 'left 0.3s ease-out'
               }}
             >
-              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center animate-pulse">
+              <div className={`w-10 h-10 rounded-full ${truck.animatedProgress > 0 ? 'bg-yellow-500' : 'bg-blue-500'} flex items-center justify-center animate-pulse`}>
                 <Truck className="w-5 h-5 text-black" />
               </div>
               <div className="text-xs mt-2 whitespace-nowrap bg-dark p-1 rounded">
@@ -138,7 +140,7 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
             {truck.journeyInfo.slice(0, 3).map((info, index) => {
               // Calculate whether this update should be shown based on progress
               const showThreshold = ((index + 1) / 4) * 100; // Display progressively
-              const shouldShow = truck.animatedProgress >= showThreshold;
+              const shouldShow = truck.animatedProgress >= showThreshold || truck.animatedProgress <= 5;
               
               return (
                 <div 

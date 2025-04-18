@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DashboardPanel from '../DashboardPanel';
 import { BarChart2, TrendingUp, Clock, Activity, Truck, Fuel, DollarSign, Users, Database, AlertCircle, Package, CheckCircle, Clock4, MapPin } from 'lucide-react';
@@ -28,9 +27,9 @@ const Overview: React.FC = () => {
       return sum + amount;
     }, 0);
   
-  // Get trucks in transit with calculated progress
-  const trucksInTransit = orders
-    .filter(order => order.status === 'in-transit')
+  // Get trucks in transit or active with calculated progress
+  const activeTrucksData = orders
+    .filter(order => order.status === 'in-transit' || order.status === 'active')
     .map(order => {
       const truck = trucks.find(t => t.id === order.assigned_truck_id);
       if (!truck) return null;
@@ -51,8 +50,12 @@ const Overview: React.FC = () => {
         const progressDist = Math.sqrt(progressLng * progressLng + progressLat * progressLat);
         
         progress = (progressDist / totalDist) * 100;
-        progress = Math.max(0, Math.min(100, progress));
+      } else {
+        // For active orders without coordinates, show a starting progress
+        progress = order.status === 'active' ? 5 : progress;
       }
+      
+      progress = Math.max(0, Math.min(100, progress));
 
       return {
         id: truck.id,
@@ -179,13 +182,13 @@ const Overview: React.FC = () => {
         </div>
       </DashboardPanel>
       
-      {trucksInTransit.length > 0 && (
+      {activeTrucksData.length > 0 && (
         <DashboardPanel title="Active Deliveries" icon={<Truck size={16} />} className="mt-6">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {trucksInTransit.length} truck{trucksInTransit.length !== 1 ? 's' : ''} currently en route
+                  {activeTrucksData.length} truck{activeTrucksData.length !== 1 ? 's' : ''} currently assigned
                 </p>
               </div>
               <button 
@@ -198,7 +201,7 @@ const Overview: React.FC = () => {
             </div>
             
             <div className="border border-border/20 rounded-md p-4 bg-dark-lighter animate-fade-in" style={{animationDelay: '1s'}}>
-              <LinearTrackingView trucks={trucksInTransit} />
+              <LinearTrackingView trucks={activeTrucksData} />
             </div>
           </div>
         </DashboardPanel>

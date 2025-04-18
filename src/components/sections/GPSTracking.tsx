@@ -21,19 +21,21 @@ const GPSTracking: React.FC = () => {
   const { trucks } = useFleet();
   const [activeTab, setActiveTab] = useState("linear");
   
-  // Filter orders that are in transit
-  const inTransitOrders = orders.filter(order => order.status === 'in-transit');
+  // Filter orders that are in transit or active (both should be displayed in tracking)
+  const trackableOrders = orders.filter(order => 
+    order.status === 'in-transit' || order.status === 'active'
+  );
   
   // Get GPS-enabled trucks
   const gpsEnabledTrucks = trucks.filter(truck => truck.gps_enabled);
   
   // Get unassigned GPS trucks (GPS-enabled but not on delivery)
   const unassignedGpsTrucks = gpsEnabledTrucks.filter(
-    truck => !inTransitOrders.some(order => order.assigned_truck_id === truck.id)
+    truck => !trackableOrders.some(order => order.assigned_truck_id === truck.id)
   );
   
-  // Trucks that are assigned to orders in transit with progress calculation
-  const assignedTrucks = inTransitOrders
+  // Trucks that are assigned to orders in transit or active with progress calculation
+  const assignedTrucks = trackableOrders
     .map(order => {
       const truck = trucks.find(t => t.id === order.assigned_truck_id);
       if (!truck) return null;
@@ -54,8 +56,12 @@ const GPSTracking: React.FC = () => {
         const progressDist = Math.sqrt(progressLng * progressLng + progressLat * progressLat);
         
         progress = (progressDist / totalDist) * 100;
-        progress = Math.max(0, Math.min(100, progress));
+      } else {
+        // For active orders without coordinates, show a starting progress
+        progress = order.status === 'active' ? 5 : progress;
       }
+      
+      progress = Math.max(0, Math.min(100, progress));
 
       return {
         id: truck.id,
