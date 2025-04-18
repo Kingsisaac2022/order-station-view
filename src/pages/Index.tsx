@@ -5,7 +5,8 @@ import Dashboard from '../components/Dashboard';
 import Logo from '../components/Logo';
 
 const Index = () => {
-  const [activeSection, setActiveSection] = useState('overview');
+  // Set initial activeSection to gps-tracking to show active deliveries first
+  const [activeSection, setActiveSection] = useState('gps-tracking');
 
   return (
     <div className="min-h-screen bg-dark text-foreground">

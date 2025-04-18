@@ -95,7 +95,7 @@ const GPSTracking: React.FC = () => {
             <TabsTrigger value="map">Map View</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="linear">
+          <TabsContent value="linear" className="animate-fade-in">
             <div className="border border-border/20 rounded-md p-4 bg-dark-lighter">
               {assignedTrucks.length > 0 ? (
                 <LinearTrackingView trucks={assignedTrucks} />
@@ -113,7 +113,7 @@ const GPSTracking: React.FC = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="map">
+          <TabsContent value="map" className="animate-fade-in">
             <div className="h-64 bg-dark-lighter rounded-md border border-border/20 flex flex-col items-center justify-center p-4">
               {(assignedTrucks.length > 0 || unassignedGpsTrucks.length > 0) ? (
                 <div className="relative w-full h-full">
@@ -175,7 +175,7 @@ const GPSTracking: React.FC = () => {
                   <Button 
                     className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black"
                     size="sm"
-                    onClick={() => window.location.href = '#trucks'} // This would ideally navigate to the trucks tab
+                    onClick={() => navigate('/trucks')}
                   >
                     Add GPS Trucks
                   </Button>
