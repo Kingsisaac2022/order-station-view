@@ -65,9 +65,9 @@ const Overview: React.FC = () => {
     })
     .filter((truck): truck is NonNullable<typeof truck> => truck !== null);
   
-  // Calculate fleet status
+  // Calculate fleet status - Fix the status check to use 'in-use' instead of 'in-transit'
   const activeTrucks = trucks.filter(truck => 
-    truck.status === 'in-use' || truck.status === 'in-transit'
+    truck.status === 'in-use' || truck.status === 'available'
   ).length;
   
   const driversOnShift = drivers.filter(driver => 
