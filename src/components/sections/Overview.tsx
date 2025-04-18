@@ -1,11 +1,16 @@
 import React from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { BarChart2, TrendingUp, Clock, Activity, Truck, Fuel, DollarSign, Users, Database, AlertCircle, Package, CheckCircle, Clock4 } from 'lucide-react';
+import { BarChart2, TrendingUp, Clock, Activity, Truck, Fuel, DollarSign, Users, Database, AlertCircle, Package, CheckCircle, Clock4, MapPin } from 'lucide-react';
 import { useOrders } from '@/context/OrderContext';
 import { OrderStatus } from '@/types/orders';
+import { useFleet } from '@/context/FleetContext';
+import LinearTrackingView from '../tracking/LinearTrackingView';
+import { useNavigate } from 'react-router-dom';
 
 const Overview: React.FC = () => {
+  const navigate = useNavigate();
   const { orders } = useOrders();
+  const { trucks } = useFleet();
   
   // Calculate order statistics
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
@@ -21,6 +26,43 @@ const Overview: React.FC = () => {
       const amount = parseFloat(order.total_amount.replace(/[^\d.-]/g, '')) || 0;
       return sum + amount;
     }, 0);
+  
+  // Get trucks in transit with calculated progress
+  const trucksInTransit = orders
+    .filter(order => order.status === 'in-transit')
+    .map(order => {
+      const truck = trucks.find(t => t.id === order.assigned_truck_id);
+      if (!truck) return null;
+
+      // Calculate progress
+      let progress = 0;
+      if (order.origin && order.destination_coords && order.current_location) {
+        const [startLng, startLat] = order.origin;
+        const [endLng, endLat] = order.destination_coords;
+        const [currentLng, currentLat] = order.current_location;
+        
+        const totalDistLng = endLng - startLng;
+        const totalDistLat = endLat - startLat;
+        const totalDist = Math.sqrt(totalDistLng * totalDistLng + totalDistLat * totalDistLat);
+        
+        const progressLng = currentLng - startLng;
+        const progressLat = currentLat - startLat;
+        const progressDist = Math.sqrt(progressLng * progressLng + progressLat * progressLat);
+        
+        progress = (progressDist / totalDist) * 100;
+        progress = Math.max(0, Math.min(100, progress));
+      }
+
+      return {
+        id: truck.id,
+        orderId: order.id,
+        plateNo: truck.plate_no,
+        model: truck.model,
+        progress,
+        journeyInfo: order.journey_info || []
+      };
+    })
+    .filter((truck): truck is NonNullable<typeof truck> => truck !== null);
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -124,6 +166,31 @@ const Overview: React.FC = () => {
           </div>
         </div>
       </DashboardPanel>
+      
+      {trucksInTransit.length > 0 && (
+        <DashboardPanel title="Active Deliveries" icon={<Truck size={16} />} className="mt-6">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {trucksInTransit.length} truck{trucksInTransit.length !== 1 ? 's' : ''} currently en route
+                </p>
+              </div>
+              <button 
+                onClick={() => navigate('/')} 
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                <MapPin size={12} />
+                <span>View GPS Tracking</span>
+              </button>
+            </div>
+            
+            <div className="border border-border/20 rounded-md p-4 bg-dark-lighter">
+              <LinearTrackingView trucks={trucksInTransit} />
+            </div>
+          </div>
+        </DashboardPanel>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <DashboardPanel title="Fleet Status" icon={<Truck size={16} />}>

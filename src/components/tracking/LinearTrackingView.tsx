@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Truck, MapPin, Info, CloudRain, Clock, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Truck, MapPin, Info, CloudRain, Clock, AlertCircle, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Point {
@@ -25,6 +25,39 @@ interface LinearTrackingViewProps {
 }
 
 const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
+  const [animatedTrucks, setAnimatedTrucks] = useState(trucks.map(truck => ({ ...truck, animatedProgress: 0 })));
+  
+  useEffect(() => {
+    // Animate truck progress over time
+    const interval = setInterval(() => {
+      setAnimatedTrucks(current => 
+        current.map(truck => {
+          const matchingTruck = trucks.find(t => t.id === truck.id);
+          if (!matchingTruck) return truck;
+          
+          const targetProgress = matchingTruck.progress;
+          let newProgress = truck.animatedProgress;
+          
+          // Gradually move toward target progress
+          if (newProgress < targetProgress) {
+            newProgress = Math.min(newProgress + 0.5, targetProgress);
+          }
+          
+          return { ...truck, animatedProgress: newProgress };
+        })
+      );
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [trucks]);
+
+  // City/milestone points between depot and station
+  const milestones = [
+    { position: 25, label: 'Checkpoint', icon: <Building size={14} className="text-blue-400" /> },
+    { position: 50, label: 'City Center', icon: <Building size={14} className="text-purple-400" /> },
+    { position: 75, label: 'Toll Gate', icon: <Building size={14} className="text-amber-400" /> }
+  ];
+
   const getJourneyInfoIcon = (type: string) => {
     switch (type) {
       case 'traffic':
@@ -40,15 +73,29 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
 
   return (
     <div className="w-full space-y-6">
-      {trucks.map((truck) => (
-        <div key={truck.id} className="relative">
+      {animatedTrucks.map((truck) => (
+        <div key={truck.id} className="relative mb-10">
           {/* Track line */}
           <div className="absolute left-[20px] top-8 w-[calc(100%-40px)] h-1 bg-gray-200 rounded">
             <div 
-              className="h-full bg-yellow-500 rounded transition-all duration-1000" 
-              style={{ width: `${truck.progress}%` }}
+              className="h-full bg-yellow-500 rounded transition-all duration-300" 
+              style={{ width: `${truck.animatedProgress}%` }}
             />
           </div>
+
+          {/* Milestone points */}
+          {milestones.map((milestone, index) => (
+            <div 
+              key={index}
+              className="absolute flex flex-col items-center z-10"
+              style={{ left: `${milestone.position}%`, top: '8px', transform: 'translateX(-50%)' }}
+            >
+              <div className="w-6 h-6 rounded-full bg-gray-800/50 flex items-center justify-center">
+                {milestone.icon}
+              </div>
+              <span className="text-xs mt-1">{milestone.label}</span>
+            </div>
+          ))}
 
           {/* Points */}
           <div className="flex justify-between relative">
@@ -63,7 +110,11 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
             {/* Truck Position */}
             <div 
               className="absolute flex flex-col items-center z-20"
-              style={{ left: `${truck.progress}%`, transform: 'translateX(-50%)' }}
+              style={{ 
+                left: `${truck.animatedProgress}%`, 
+                transform: 'translateX(-50%)',
+                transition: 'left 0.3s ease-out'
+              }}
             >
               <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center animate-pulse">
                 <Truck className="w-5 h-5 text-black" />
@@ -82,23 +133,29 @@ const LinearTrackingView: React.FC<LinearTrackingViewProps> = ({ trucks }) => {
             </div>
           </div>
 
-          {/* Journey Updates */}
-          <div className="mt-8 space-y-2">
-            {truck.journeyInfo.slice(0, 3).map((info, index) => (
-              <div 
-                key={index} 
-                className="flex items-center space-x-2 text-sm bg-dark-lighter p-2 rounded"
-              >
-                {getJourneyInfoIcon(info.type)}
-                <span>{info.message}</span>
-                <Badge variant="outline" className="ml-auto">
-                  {new Date(info.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </Badge>
-              </div>
-            ))}
+          {/* Real-time updates with timing based on progress */}
+          <div className="mt-12 space-y-2">
+            {truck.journeyInfo.slice(0, 3).map((info, index) => {
+              // Calculate whether this update should be shown based on progress
+              const showThreshold = ((index + 1) / 4) * 100; // Display progressively
+              const shouldShow = truck.animatedProgress >= showThreshold;
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`flex items-center space-x-2 text-sm bg-dark-lighter p-2 rounded transition-opacity duration-500 ${shouldShow ? 'opacity-100' : 'opacity-0'}`}
+                >
+                  {getJourneyInfoIcon(info.type)}
+                  <span>{info.message}</span>
+                  <Badge variant="outline" className="ml-auto">
+                    {new Date(info.timestamp).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </Badge>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}

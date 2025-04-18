@@ -76,6 +76,19 @@ const GPSTracking: React.FC = () => {
   return (
     <DashboardPanel title="GPS Tracking" icon={<MapPin size={16} />}>
       <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-medium">Active Deliveries: {assignedTrucks.length}</h3>
+            <p className="text-sm text-muted-foreground">
+              {assignedTrucks.length ? 'Real-time tracking of deliveries in progress' : 'No trucks currently on delivery'}
+            </p>
+          </div>
+          
+          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+            {gpsEnabledTrucks.length} GPS Trucks Available
+          </Badge>
+        </div>
+      
         <Tabs defaultValue="linear" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="linear">Linear View</TabsTrigger>
@@ -171,6 +184,20 @@ const GPSTracking: React.FC = () => {
             </div>
           </TabsContent>
         </Tabs>
+        
+        {/* View all trucks button */}
+        {assignedTrucks.length > 0 && (
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/trucks')}
+              className="text-xs"
+            >
+              View All Trucks
+            </Button>
+          </div>
+        )}
       </div>
     </DashboardPanel>
   );

@@ -16,15 +16,15 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: BarChart2 },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
-  { id: 'sales', label: 'Sales', icon: DollarSign },
-  { id: 'expenses', label: 'Expenses', icon: TrendingDown },
-  { id: 'competitor-pricing', label: 'Competitor Pricing', icon: Tag },
-  { id: 'shifts', label: 'Shifts', icon: Users },
   { id: 'drivers', label: 'Drivers', icon: UsersRound },
   { id: 'trucks', label: 'Trucks', icon: Truck },
   { id: 'gps-tracking', label: 'GPS Tracking', icon: MapPin },
   { id: 'tanks', label: 'Tanks', icon: Database },
   { id: 'dispensers', label: 'Dispensers', icon: Fuel },
+  { id: 'shifts', label: 'Shifts', icon: Users },
+  { id: 'competitor-pricing', label: 'Competitor Pricing', icon: Tag },
+  { id: 'sales', label: 'Sales', icon: DollarSign },
+  { id: 'expenses', label: 'Expenses', icon: TrendingDown },
   { id: 'alerts', label: 'Alerts', icon: AlertCircle },
   { id: 'insights', label: 'Insights', icon: Lightbulb }
 ];
