@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import DashboardPanel from '../DashboardPanel';
-import { MapPin, Route } from 'lucide-react';
+import { MapPin, Route, Truck } from 'lucide-react';
 import { useOrders } from '@/context/OrderContext';
 import { useFleet } from '@/context/FleetContext';
 import { Button } from '../ui/button';
@@ -12,8 +13,10 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
+import { useNavigate } from 'react-router-dom';
 
 const GPSTracking: React.FC = () => {
+  const navigate = useNavigate();
   const { orders } = useOrders();
   const { trucks } = useFleet();
   const [activeTab, setActiveTab] = useState("linear");
@@ -23,6 +26,11 @@ const GPSTracking: React.FC = () => {
   
   // Get GPS-enabled trucks
   const gpsEnabledTrucks = trucks.filter(truck => truck.gps_enabled);
+  
+  // Get unassigned GPS trucks (GPS-enabled but not on delivery)
+  const unassignedGpsTrucks = gpsEnabledTrucks.filter(
+    truck => !inTransitOrders.some(order => order.assigned_truck_id === truck.id)
+  );
   
   // Trucks that are assigned to orders in transit with progress calculation
   const assignedTrucks = inTransitOrders
@@ -59,6 +67,11 @@ const GPSTracking: React.FC = () => {
       };
     })
     .filter((truck): truck is NonNullable<typeof truck> => truck !== null);
+    
+  // Handle view order function
+  const handleViewOrder = (orderId: string) => {
+    navigate(`/order/${orderId}`);
+  };
 
   return (
     <DashboardPanel title="GPS Tracking" icon={<MapPin size={16} />}>
@@ -104,7 +117,7 @@ const GPSTracking: React.FC = () => {
                     {/* For each assigned truck, show a truck icon */}
                     {assignedTrucks.map((truck, index) => (
                       <div 
-                        key={truck.truckId}
+                        key={truck.id}
                         className="absolute flex flex-col items-center cursor-pointer"
                         style={{ 
                           left: `${30 + (index * 15)}%`, 
@@ -116,7 +129,7 @@ const GPSTracking: React.FC = () => {
                           <Truck size={16} className="text-black" />
                         </div>
                         <div className="mt-1 px-2 py-1 bg-dark rounded text-xs">
-                          {truck.poNumber.split('/').pop()} - {truck.plateNo}
+                          {truck.orderId.split('/').pop()} - {truck.plateNo}
                         </div>
                       </div>
                     ))}
